@@ -1,5 +1,3 @@
-I have updated the technical specifications and execution commands in the documentation to reflect your specific runtime environment, including the Docker-based Redis setup and the local Ollama configuration.
-
 AI Accounts Payable Autonomous Agent
 State-Driven Multi-Agent Financial Orchestration Engine
 
