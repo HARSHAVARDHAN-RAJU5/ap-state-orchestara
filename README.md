@@ -253,6 +253,5 @@ The MVP supports:
 
 # Author
 
-Harshavardhan R  
-AI Engineer Internship Submission  
+Harshavardhan R
 2026
