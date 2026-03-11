@@ -172,6 +172,8 @@ The AI layer **never performs financial mutations**.
 
 ap-state-orchestrara/
 
+ap-state-orchestrara/
+
 ├── agent/ # AI reasoning agents
 │ ├── MatchingAgent
 │ ├── ValidationAgent
@@ -186,7 +188,7 @@ ap-state-orchestrara/
 │
 ├── modules/ # Core invoice lifecycle modules
 │
-├── monitoring/ # SLA monitoring & payment scheduling
+├── monitoring/ # SLA monitoring and payment scheduling
 │
 ├── orchestrator.js # Central state-machine orchestrator
 ├── redisClient.js # Redis Streams configuration
