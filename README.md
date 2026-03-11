@@ -1,298 +1,323 @@
-AI Accounts Payable Autonomous Agent
-State-Driven Multi-Agent Financial Orchestration Engine
+<p align="center">
+  <h1>AI Accounts Payable Autonomous Agent</h1>
+  <p>State-Driven Multi-Agent Financial Orchestration Engine</p>
+</p>
+# AI Accounts Payable Autonomous Agent
+## State-Driven Multi-Agent Financial Orchestration Engine
 
-A production-style system designed to autonomously manage the end-to-end invoice lifecycle — from ingestion to final payment — using a deterministic state machine to govern AI reasoning.
+A production-style system designed to autonomously manage the **end-to-end invoice lifecycle — from ingestion to final payment — using a deterministic state machine to govern AI reasoning.**
 
-This architecture is built for high-stakes financial environments where auditability, safety, and deterministic control are critical.
+This architecture is built for **high-stakes financial environments** where **auditability, safety, and deterministic control are critical.**
 
-📺 Technical Demo & Walkthrough
+---
 
-Demo Video: (https://drive.google.com/file/d/1Dg9g4yk35coTcb8iav1C01iFJT0RRo7T/view?usp=drive_link)
+# 📺 Technical Demo & Walkthrough
 
-In this 4-minute walkthrough, the system architecture is demonstrated while processing an invoice with a PO mismatch exception.
+**Demo Video**  
+https://drive.google.com/file/d/1Dg9g4yk35coTcb8iav1C01iFJT0RRo7T/view
 
-The demo shows:
+In this **4-minute walkthrough**, the system architecture is demonstrated while processing an invoice with a **PO mismatch exception**.
 
-State-driven orchestration of the invoice lifecycle
+### The demo shows
 
-Exception routing through EXCEPTION_REVIEW
+- State-driven orchestration of the invoice lifecycle  
+- Exception routing through **EXCEPTION_REVIEW**  
+- Manual approval flow via terminal command  
+- Full forensic audit trail of the system decisions  
 
-Manual approval flow via terminal command
+---
 
-Full forensic audit trail of the system decisions
+# 🏗️ Core Engineering Principles
 
-🏗️ Core Engineering Principles
-Deterministic Control
+## Deterministic Control
 
-The system enforces strict separation between AI reasoning and financial execution.
+The system strictly separates **AI reasoning** from **financial execution**.
 
-AI Agents
+**AI Agents**
+- Perform analysis, classification, and anomaly detection
+- Provide insights but cannot mutate the database
 
-Perform analysis, classification, and anomaly detection
+**Workers**
+- Deterministic execution services
+- Responsible for state transitions and financial mutations
 
-Cannot mutate the database
+This design prevents **LLM hallucinations from affecting financial records.**
 
-Workers
+---
 
-Deterministic services that perform state transitions
+## Multi-Tenant Policy Engine
 
-Responsible for all financial mutations
+Organizations can configure financial policies dynamically without modifying code.
 
-This ensures LLM hallucinations cannot impact financial records.
+Examples include:
 
-Multi-Tenant Policy Engine
+- Matching tolerance (e.g. **0.01% variance**)  
+- Approval thresholds  
+- Payment policies  
+- SLA rules  
 
-Organizations can dynamically configure financial policies without code changes.
+Policies are stored in **organization-scoped configuration tables.**
 
-Examples:
+---
 
-Matching tolerance (e.g. 0.01% variance)
+## Audit-First Design
 
-Approval thresholds
-
-Payment policies
-
-SLA rules
-
-All policies are stored in organization-scoped configuration tables.
-
-Audit-First Design
-
-Every state transition generates an immutable record inside:
+Every state transition creates an immutable record in:
 
 audit_event_log
 
-Each record contains:
+Each audit record captures:
 
-actor_identity
+- Actor identity
+- Timestamp
+- Previous state
+- New state
+- Reason for transition
 
-timestamp
+This provides a **SOC2-ready audit framework.**
 
-previous_state
+---
 
-new_state
+## Strategic SLA Management
 
-reason_for_transition
+An automated SLA monitoring engine ensures:
 
-This architecture provides a SOC2-ready audit framework.
+- Payments are scheduled based on **invoice due dates**
+- **Early payment discount windows** are captured
+- Late payment risk is minimized
+- Corporate **working capital is optimized**
 
-Strategic SLA Management
+---
 
-The system includes an SLA monitoring engine which:
+# 🛠️ Technical Architecture
 
-Schedules payments based on due dates
+## State Machine Lifecycle
 
-Detects discount windows
-
-Prevents late payments
-
-Optimizes working capital utilization
-
-🛠️ Technical Architecture
-State Machine Lifecycle
-
-The invoice lifecycle is governed by a strict state machine:
+The invoice lifecycle follows a strict deterministic state machine:
 
 RECEIVED
-   ↓
+↓
 STRUCTURED
-   ↓
+↓
 DUPLICATE_CHECK
-   ↓
+↓
 VALIDATING
-   ↓
+↓
 MATCHING
-   ↓
+↓
 EXCEPTION_REVIEW
-   ↓
+↓
 PENDING_APPROVAL
-   ↓
+↓
 APPROVED
-   ↓
+↓
 PAYMENT_READY
-   ↓
+↓
 COMPLETED
 
-Additional safety states:
-
+Additional system safety states:
 WAITING_INFO
 BLOCKED
 
-All transitions are enforced by the Orchestrator.
 
-Orchestration Layer
-The Orchestrator
+All transitions are enforced by the **Orchestrator**.
 
-The Orchestrator is the single authority responsible for:
+---
 
-State transitions
+## Orchestration Layer
 
-Event emission
+### The Orchestrator
 
-Workflow coordination
+The **Orchestrator** is the central authority responsible for:
 
-Guardrail enforcement
+- Managing state transitions
+- Publishing events to the event bus
+- Enforcing guardrails
+- Coordinating agents and workers
 
-It reads and writes the authoritative state stored in PostgreSQL.
+It maintains the authoritative state stored in **PostgreSQL**.
 
-Redis Event Bus
+---
 
-The system uses Redis Streams for asynchronous orchestration.
+### Redis Event Bus
+
+The system uses **Redis Streams** for asynchronous communication.
 
 Benefits:
 
-Horizontal scalability
+- Horizontal scalability
+- Event-driven architecture
+- Independent worker processing
+- Non-blocking system execution
 
-Worker isolation
+---
 
-Event-driven execution
+## Bounded AI Reasoning
 
-Non-blocking architecture
+AI is used only for **non-deterministic reasoning tasks**, such as:
 
-Bounded AI Reasoning
+- Risk classification
+- Matching anomaly interpretation
+- Exception reasoning
 
-AI models are used only for non-deterministic reasoning tasks, including:
-
-Risk classification
-
-Matching anomaly interpretation
-
-Exception analysis
-
-Model:
+Model used:
 
 Ollama + Llama3
 
-The AI never performs financial mutations.
+The AI layer **never performs financial mutations**.
 
-📂 Project Structure
-senitac/
+---
 
-├── agent/                 # AI reasoning agents
-│   ├── MatchingAgent
-│   ├── ValidationAgent
-│   └── ExceptionReviewAgent
-│
-├── workers/               # Deterministic execution workers
-│   ├── ExtractionWorker
-│   ├── DuplicateWorker
-│   ├── MatchingWorker
-│   ├── PaymentWorker
-│
-├── modules/               # Core invoice lifecycle logic
-│
-├── monitoring/            # SLA monitoring and payment scheduler
-│
-├── orchestrator.js        # State-machine orchestration engine
-├── redisClient.js         # Redis Streams configuration
-└── db.js                  # PostgreSQL connection
-📊 Data Layer & Safety
-Database
+# 📂 Project Structure
 
-PostgreSQL
+ap-state-orchestrara/
 
-Used as the authoritative state store.
+├── agent/ # AI reasoning agents
+│ ├── MatchingAgent
+│ ├── ValidationAgent
+│ └── ExceptionReviewAgent
+│
+├── workers/ # Deterministic execution workers
+│ ├── ExtractionWorker
+│ ├── DuplicateWorker
+│ ├── MatchingWorker
+│ ├── ApprovalWorker
+│ └── PaymentWorker
+│
+├── modules/ # Core invoice lifecycle modules
+│
+├── monitoring/ # SLA monitoring & payment scheduling
+│
+├── orchestrator.js # Central state-machine orchestrator
+├── redisClient.js # Redis Streams configuration
+└── db.js # PostgreSQL connection
+
+
+---
+
+# 📊 Data Layer & Safety
+
+## Database
+
+**PostgreSQL**
+
+Used as the **authoritative system of record**.
 
 Key properties:
 
-strict organization_id isolation
+- Strict `organization_id` multi-tenant isolation
+- Financial data consistency
+- Transactional safety
 
-multi-tenant schema design
+---
 
-financial consistency guarantees
+## Event Layer
 
-Event Layer
-
-Redis Streams
+**Redis Streams**
 
 Provides:
 
-event-driven orchestration
+- Event-driven orchestration
+- Asynchronous task execution
+- Distributed system scalability
 
-asynchronous worker execution
+---
 
-distributed system scalability
+## Financial Guardrails
 
-Financial Guardrails
+The system includes several financial safety checks.
 
-The system enforces multiple safety mechanisms:
+### 3-Way Matching
 
-3-Way Matching
 Invoice
-   vs
+vs
 Purchase Order
-   vs
+vs
 Goods Receipt
-Duplicate Detection
 
-Invoices are checked using hash-based fingerprinting to detect duplicates.
 
-Fraud Protection
+Ensures invoice accuracy before payment approval.
 
-The system includes:
+---
 
-Bank account mismatch alerts
+### Duplicate Invoice Detection
 
-Vendor verification workflows
+Invoices are checked using **hash-based fingerprinting** to detect duplicate submissions.
 
-Risk classification using AI
+---
 
-🚀 Setup & Execution
-Prerequisites
+### Fraud Protection
+
+Built-in fraud detection mechanisms include:
+
+- **Bank account mismatch alerts**
+- Vendor verification workflows
+- AI-assisted risk classification
+
+---
+
+# 🚀 Setup & Execution
+
+## Prerequisites
 
 Ensure the following services are running.
 
-PostgreSQL
+### PostgreSQL
 
 Start PostgreSQL locally.
 
-Redis (Docker)
+---
+
+### Redis (Docker)
 
 Run Redis Stack:
 
+bash
 docker run -d \
   --name redis-stack \
   -p 6379:6379 \
   -p 8001:8001 \
   redis/redis-stack:latest
+
 Ollama
 
 Install Ollama and run the Llama3 model:
 
 ollama run llama3
+
 Install Dependencies
+
 npm install
 Start the System
 
-The system requires two services.
+The system requires two services to run.
 
 Start the Orchestration Engine
 node orchestrator.js
 Start the SLA Monitor
 node monitoring/sla_monitor.js
 
-This service manages:
+The SLA monitor manages:
 
 payment scheduling
 
-SLA monitoring
+due date monitoring
 
-escalation logic
+escalation handling
 
 📄 Technical Documentation
 
-For a deeper explanation of the architecture, including:
+For deeper technical details including:
 
-system design decisions
+Architecture design decisions
 
-ER diagrams
+System ER diagrams
 
-architectural trade-offs
+State machine explanation
 
-failure recovery strategies
+Failure recovery strategies
 
 Refer to the Technical Design Document (PDF).
-https://drive.google.com/file/d/1gkuYZf6iZAvy8Bgy7jLMgqdrkYa0sMr8/view?usp=sharing
 
 Author
 
