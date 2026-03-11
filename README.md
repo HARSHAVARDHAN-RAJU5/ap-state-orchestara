@@ -279,48 +279,65 @@ docker run -d \
   -p 8001:8001 \
   redis/redis-stack:latest
 
-Ollama
+---
+
+### Ollama
 
 Install Ollama and run the Llama3 model:
 
 ollama run llama3
 
-Install Dependencies
+---
+
+## Install Dependencies
 
 npm install
-Start the System
 
-The system requires two services to run.
 
-Start the Orchestration Engine
+---
+
+## Start the System
+
+The system requires **two services** to run.
+
+---
+
+### Start the Orchestration Engine
+
 node orchestrator.js
-Start the SLA Monitor
+
+
+---
+
+### Start the SLA Monitor
+
+
 node monitoring/sla_monitor.js
 
-The SLA monitor manages:
 
-payment scheduling
+This service manages:
 
-due date monitoring
+- payment scheduling  
+- due-date monitoring  
+- escalation handling  
 
-escalation handling
+---
 
-📄 Technical Documentation
+## 📄 Technical Documentation
 
 For deeper technical details including:
 
-Architecture design decisions
+- architecture design decisions  
+- system ER diagrams  
+- state machine explanation  
+- failure recovery strategies  
 
-System ER diagrams
+Refer to the **Technical Design Document (PDF).**
+https://drive.google.com/file/d/1gkuYZf6iZAvy8Bgy7jLMgqdrkYa0sMr8/view?usp=drive_link
+---
 
-State machine explanation
+## 👨‍💻 Author
 
-Failure recovery strategies
-
-Refer to the Technical Design Document (PDF).
-
-Author
-
-Harshavardhan R
-AI Systems Engineering
+**Harshavardhan R**  
+AI Systems Engineering  
 2026
