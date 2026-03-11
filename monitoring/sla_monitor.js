@@ -59,7 +59,7 @@ setInterval(async () => {
             await client.query(
               `
               UPDATE invoice_payment_schedule
-              SET payment_status = 'COMPLETED',
+              SET payment_status = 'PAID',
                   paid_at = NOW()
               WHERE payment_id = $1
               `,

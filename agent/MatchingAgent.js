@@ -1,6 +1,7 @@
 import BaseAgent from "./BaseAgent.js";
 import * as Worker from "../workers/MatchingWorker.js";
 import axios from "axios";
+import db from "../db.js";
 
 function safeParseLLM(raw) {
   try {
@@ -26,11 +27,13 @@ export default class MatchingAgent extends BaseAgent {
     return { action: "EVALUATE_SIGNALS" };
   }
 
-  async act(plan) {
+  async act() {
     return await Worker.execute(this.context);
   }
 
   async evaluate(observation) {
+
+    const { invoice_id, organization_id } = this.context;
 
     if (!observation?.success) {
       return {
@@ -46,21 +49,18 @@ Signals:
 ${JSON.stringify(observation.signals)}
 
 Respond ONLY with valid JSON.
-No explanations.
-No markdown.
-No extra text.
 
-Format:
 {
   "classification": "VALID" | "REVIEW" | "WAITING_INFO" | "BLOCKED",
   "reason": "short explanation",
-  "risk_score": 0-100
+  "risk_score": number
 }
 `;
 
     let response;
 
     try {
+
       response = await axios.post(
         "http://127.0.0.1:11434/api/generate",
         {
@@ -69,7 +69,11 @@ Format:
           stream: false
         }
       );
+
     } catch (err) {
+
+      console.error("LLM call failed:", err.message);
+
       return {
         nextState: "BLOCKED",
         reason: "LLM call failed"
@@ -103,19 +107,71 @@ Format:
       };
     }
 
-    switch (output.classification) {
+    const riskScore = output.risk_score ?? null;
+    const classification = output.classification;
+    const reason = output.reason ?? null;
+
+    // -----------------------
+    // STORE RISK RESULT
+    // -----------------------
+
+    await db.query(
+      `
+      INSERT INTO invoice_risk_assessment
+      (
+        invoice_id,
+        organization_id,
+        risk_score,
+        classification,
+        reason,
+        evaluated_at
+      )
+      VALUES ($1,$2,$3,$4,$5,NOW())
+      ON CONFLICT (invoice_id, organization_id)
+      DO UPDATE SET
+        risk_score = EXCLUDED.risk_score,
+        classification = EXCLUDED.classification,
+        reason = EXCLUDED.reason,
+        evaluated_at = NOW()
+      `,
+      [
+        invoice_id,
+        organization_id,
+        riskScore,
+        classification,
+        reason
+      ]
+    );
+
+    // -----------------------
+    // STATE TRANSITION
+    // -----------------------
+
+    switch (classification) {
 
       case "BLOCKED":
-        return { nextState: "BLOCKED", reason: output.reason };
+        return {
+          nextState: "BLOCKED",
+          reason
+        };
 
       case "WAITING_INFO":
-        return { nextState: "WAITING_INFO", reason: output.reason };
+        return {
+          nextState: "WAITING_INFO",
+          reason
+        };
 
       case "REVIEW":
-        return { nextState: "EXCEPTION_REVIEW", reason: output.reason };
+        return {
+          nextState: "EXCEPTION_REVIEW",
+          reason
+        };
 
       case "VALID":
-        return { nextState: "PENDING_APPROVAL", reason: output.reason };
+        return {
+          nextState: "PENDING_APPROVAL",
+          reason
+        };
 
       default:
         return {

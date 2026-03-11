@@ -31,7 +31,7 @@ router.post("/:invoice_id/pay", async (req, res) => {
 
     await pool.query(
       `
-      UPDATE invoice_payment_schedule
+      
       SET payment_status = 'PAID',
           paid_at = NOW()
       WHERE invoice_id = $1

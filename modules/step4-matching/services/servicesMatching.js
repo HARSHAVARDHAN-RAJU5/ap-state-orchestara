@@ -8,7 +8,9 @@ export const runMatching = async (context) => {
     throw new Error("runMatching requires invoice_id and organization_id");
   }
 
+  // -----------------------------
   // 1️⃣ Vendor validation check
+  // -----------------------------
   const validationRes = await db.query(
     `
     SELECT overall_status, vendor_id, bank_status
@@ -28,7 +30,12 @@ export const runMatching = async (context) => {
 
   const { vendor_id, bank_status } = validationRes.rows[0];
 
+  // Bank mismatch signal
+  const bank_mismatch_flag = bank_status === "MISMATCH";
+
+  // -----------------------------
   // 2️⃣ Extract invoice data
+  // -----------------------------
   const invoiceRes = await db.query(
     `
     SELECT data
@@ -58,10 +65,12 @@ export const runMatching = async (context) => {
   let po = null;
   let missing_po_flag = false;
   let price_variance_flag = false;
-  const bank_mismatch_flag = bank_status === "MISMATCH";
 
+  // -----------------------------
   // 3️⃣ Direct PO number match
+  // -----------------------------
   if (poNumber) {
+
     const poRes = await db.query(
       `
       SELECT *
@@ -77,8 +86,11 @@ export const runMatching = async (context) => {
     }
   }
 
-  // 4️⃣ Fallback: vendor + tolerance match (using TOTAL)
+  // -----------------------------
+  // 4️⃣ Vendor fallback matching
+  // -----------------------------
   if (!po) {
+
     const vendorPOs = await db.query(
       `
       SELECT *
@@ -90,6 +102,7 @@ export const runMatching = async (context) => {
     );
 
     const matches = vendorPOs.rows.filter(p => {
+
       const poAmount = parseFloat(p.total_amount || 0);
       if (!poAmount) return false;
 
@@ -106,13 +119,17 @@ export const runMatching = async (context) => {
     }
   }
 
-  // 5️⃣ Strict variance check (TOTAL vs TOTAL)
+  // -----------------------------
+  // 5️⃣ Strict variance check
+  // -----------------------------
   if (po) {
 
     const poAmount = parseFloat(po.total_amount || 0);
 
     if (!poAmount) {
+
       price_variance_flag = true;
+
     } else {
 
       const variance =
@@ -124,19 +141,30 @@ export const runMatching = async (context) => {
     }
   }
 
-  // 6️⃣ Persist results
+  // -----------------------------
+  // 6️⃣ Persist matching results
+  // -----------------------------
   await db.query(
     `
     INSERT INTO invoice_po_matching_results
-      (invoice_id, organization_id, po_number, matching_status,
-       missing_po_flag, price_variance_flag, matched_at)
-    VALUES ($1,$2,$3,$4,$5,$6,NOW())
+    (
+      invoice_id,
+      organization_id,
+      po_number,
+      matching_status,
+      missing_po_flag,
+      price_variance_flag,
+      missing_receipt_flag,
+      matched_at
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())
     ON CONFLICT (invoice_id, organization_id)
     DO UPDATE SET
       po_number = EXCLUDED.po_number,
       matching_status = EXCLUDED.matching_status,
       missing_po_flag = EXCLUDED.missing_po_flag,
       price_variance_flag = EXCLUDED.price_variance_flag,
+      missing_receipt_flag = EXCLUDED.missing_receipt_flag,
       matched_at = NOW()
     `,
     [
@@ -145,10 +173,14 @@ export const runMatching = async (context) => {
       po ? po.po_number : null,
       po ? "MATCHED" : "MISMATCH",
       missing_po_flag,
-      price_variance_flag
+      price_variance_flag,
+      false
     ]
   );
 
+  // -----------------------------
+  // 7️⃣ Return signals for LLM
+  // -----------------------------
   return {
     success: true,
     signals: {
