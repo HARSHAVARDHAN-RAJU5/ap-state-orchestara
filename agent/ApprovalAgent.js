@@ -13,13 +13,13 @@ export default class ApprovalAgent extends BaseAgent {
     };
   }
 
-  async act(plan) {
+  async act() {
     return await ApprovalWorker.execute(this.context);
   }
 
   async evaluate(observation) {
 
-    if (!observation || observation.success !== true) {
+    if (!observation?.success) {
       return {
         nextState: "BLOCKED",
         reason: observation?.reason || "Approval routing failed"
@@ -27,8 +27,8 @@ export default class ApprovalAgent extends BaseAgent {
     }
 
     return {
-      nextState: observation.status || "APPROVED",
-      reason: "Approval workflow completed"
+      nextState: "EXCEPTION_REVIEW",
+      reason: "Invoice routed for human approval"
     };
   }
 }

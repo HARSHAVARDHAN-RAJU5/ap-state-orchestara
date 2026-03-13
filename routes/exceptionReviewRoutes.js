@@ -11,11 +11,15 @@ router.post("/:invoice_id/decision", async (req, res) => {
     const { invoice_id } = req.params;
     const { decision, comment } = req.body;
 
-    if (!["APPROVE", "BLOCK"].includes(decision)) {
-      return res.status(400).json({ error: "Invalid decision" });
+    const allowed = ["APPROVE", "ESCALATE", "BLOCK"];
+
+    if (!allowed.includes(decision)) {
+      return res.status(400).json({
+        error: "Invalid decision"
+      });
     }
 
-    // Fetch state + organization_id
+    // fetch invoice state + org
     const stateRes = await pool.query(
       `
       SELECT current_state, organization_id
@@ -26,18 +30,20 @@ router.post("/:invoice_id/decision", async (req, res) => {
     );
 
     if (!stateRes.rows.length) {
-      return res.status(404).json({ error: "Invoice not found" });
+      return res.status(404).json({
+        error: "Invoice not found"
+      });
     }
 
     const { current_state, organization_id } = stateRes.rows[0];
 
     if (current_state !== "EXCEPTION_REVIEW") {
       return res.status(400).json({
-        error: "Invoice not in EXCEPTION_REVIEW state"
+        error: "Invoice not awaiting review"
       });
     }
 
-    // Insert / Update decision (correct columns)
+    // record decision
     await pool.query(
       `
       INSERT INTO exception_review_decisions
@@ -58,36 +64,40 @@ router.post("/:invoice_id/decision", async (req, res) => {
       ]
     );
 
-    // Audit log (use correct columns if needed)
+    // audit log
     await pool.query(
       `
       INSERT INTO audit_event_log
       (invoice_id, old_state, new_state, reason, organization_id, created_at)
-      VALUES ($1,$2,$3,$4,$5,NOW())
+      VALUES ($1,'EXCEPTION_REVIEW','EXCEPTION_REVIEW',$2,$3,NOW())
       `,
       [
         invoice_id,
-        "EXCEPTION_REVIEW",
-        "EXCEPTION_REVIEW",
-        `Internal decision recorded: ${decision}`,
+        `Review decision recorded: ${decision}`,
         organization_id
       ]
     );
 
-    // Emit resume event (include org id)
+    // wake orchestrator
     await redis.xAdd("invoice_events", "*", {
       invoice_id,
       organization_id
     });
 
     return res.json({
-      message: "Internal review decision recorded successfully"
+      message: "Review decision recorded successfully"
     });
 
   } catch (err) {
+
     console.error(err);
-    return res.status(500).json({ error: "Internal server error" });
+
+    return res.status(500).json({
+      error: "Internal server error"
+    });
+
   }
+
 });
 
 export default router;

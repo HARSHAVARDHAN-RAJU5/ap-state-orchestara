@@ -1,5 +1,5 @@
 import pool from "../db.js";
-import { evaluateTax } from "../modules/taxEngineCompliance.js";
+import { evaluateTax } from "../core/taxEngineCompliance.js";
 
 export async function execute(context) {
 

@@ -5,7 +5,6 @@ import DuplicateAgent from "./DuplicateAgent.js";
 import ValidationAgent from "./ValidationAgent.js";
 import MatchingAgent from "./MatchingAgent.js";
 import ComplianceAgent from "./ComplianceAgent.js";
-import ApprovalAgent from "./ApprovalAgent.js";
 import PaymentAgent from "./PaymentAgent.js";
 import ExceptionReviewAgent from "./ExceptionReviewAgent.js";
 
@@ -64,15 +63,21 @@ export default class SupervisorAgent {
       case "COMPLIANCE":
         return new ComplianceAgent(this.context);
 
-      case "PENDING_APPROVAL":
-        return new ApprovalAgent(this.context);
-
-      case "APPROVED":
       case "PAYMENT_READY":
         return new PaymentAgent(this.context);
 
       case "EXCEPTION_REVIEW":
         return new ExceptionReviewAgent(this.context);
+
+      case "APPROVED":
+      case "ACCOUNTING":
+      case "PAYMENT_EXECUTION":
+        return {
+          run: async () => ({
+            nextState: state,
+            reason: "Handled by orchestrator worker"
+          })
+        };
 
       default:
         throw new Error(`No agent mapped for state: ${state}`);

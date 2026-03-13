@@ -44,7 +44,7 @@ export default class ComplianceAgent extends BaseAgent {
     }
 
     return {
-      nextState: "PENDING_APPROVAL",
+      nextState: "PAYMENT_READY",
       reason: "Invoice passed compliance checks"
     };
   }

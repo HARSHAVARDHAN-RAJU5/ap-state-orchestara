@@ -17,21 +17,51 @@ redis.on("error", (err) => {
   console.error("Redis Error:", err);
 });
 
-const STATE_TRANSITIONS = {  RECEIVED: ["STRUCTURED", "WAITING_INFO"],
+const STATE_TRANSITIONS = {
+
+  RECEIVED: ["STRUCTURED", "WAITING_INFO"],
+
   STRUCTURED: ["DUPLICATE_CHECK", "BLOCKED"],
+
   DUPLICATE_CHECK: ["VALIDATING", "BLOCKED"],
-  VALIDATING: ["MATCHING", "WAITING_INFO", "BLOCKED","EXCEPTION_REVIEW" ],
+
+  VALIDATING: ["MATCHING", "WAITING_INFO", "BLOCKED", "EXCEPTION_REVIEW"],
+
   MATCHING: [
-    "PENDING_APPROVAL",
+    "COMPLIANCE",
     "WAITING_INFO",
     "EXCEPTION_REVIEW",
     "BLOCKED"
   ],
+
+  COMPLIANCE: [
+    "PAYMENT_READY",
+    "EXCEPTION_REVIEW",
+    "BLOCKED"
+  ],
+
+  PAYMENT_READY: ["EXCEPTION_REVIEW"],
+
   WAITING_INFO: ["RECEIVED"],
-  EXCEPTION_REVIEW: ["EXCEPTION_REVIEW", "PENDING_APPROVAL", "BLOCKED"],
-  PENDING_APPROVAL: ["APPROVED", "BLOCKED"],
-  APPROVED: ["PAYMENT_READY"],
-  PAYMENT_READY: ["COMPLETED"]
+
+  EXCEPTION_REVIEW: [
+    "APPROVED",
+    "BLOCKED",
+    "WAITING_INFO"
+  ],
+
+  APPROVED: ["ACCOUNTING"],
+
+  ACCOUNTING: [
+    "PAYMENT_EXECUTION",
+    "EXCEPTION_REVIEW"
+  ],
+
+  PAYMENT_EXECUTION: [
+    "COMPLETED",
+    "BLOCKED"
+  ]
+
 };
 
 async function logAudit(
@@ -41,6 +71,7 @@ async function logAudit(
   new_state,
   reason = null
 ) {
+
   await pool.query(
     `
     INSERT INTO audit_event_log
@@ -58,7 +89,7 @@ async function processInvoice(invoice_id, organization_id) {
     SELECT current_state, retry_count
     FROM invoice_state_machine
     WHERE invoice_id = $1
-      AND organization_id = $2
+    AND organization_id = $2
     `,
     [invoice_id, organization_id]
   );
@@ -106,7 +137,7 @@ async function processInvoice(invoice_id, organization_id) {
               retry_count = 0,
               last_updated = NOW()
           WHERE invoice_id = $2
-            AND organization_id = $3
+          AND organization_id = $3
           `,
           [reflection.overrideState, invoice_id, organization_id]
         );
@@ -153,7 +184,7 @@ async function processInvoice(invoice_id, organization_id) {
           SET current_state = 'BLOCKED',
               last_updated = NOW()
           WHERE invoice_id = $1
-            AND organization_id = $2
+          AND organization_id = $2
           `,
           [invoice_id, organization_id]
         );
@@ -176,7 +207,7 @@ async function processInvoice(invoice_id, organization_id) {
         SET retry_count = retry_count + 1,
             last_updated = NOW()
         WHERE invoice_id = $1
-          AND organization_id = $2
+        AND organization_id = $2
         `,
         [invoice_id, organization_id]
       );
@@ -203,7 +234,6 @@ async function processInvoice(invoice_id, organization_id) {
       );
     }
 
-    // --- STATE UPDATE ---
     await pool.query(
       `
       UPDATE invoice_state_machine
@@ -211,7 +241,7 @@ async function processInvoice(invoice_id, organization_id) {
           retry_count = 0,
           last_updated = NOW()
       WHERE invoice_id = $2
-        AND organization_id = $3
+      AND organization_id = $3
       `,
       [decision.nextState, invoice_id, organization_id]
     );
@@ -226,22 +256,19 @@ async function processInvoice(invoice_id, organization_id) {
 
     console.log("Moved to:", decision.nextState);
 
-    // --- ACCOUNTING HOOK ---
-    if (decision.nextState === "APPROVED") {
-      try {
-        await AccountingWorker.postAccrual(context);
-        console.log("Accrual journal booked.");
-      } catch (accountingError) {
+    if (decision.nextState === "ACCOUNTING") {
 
-        console.error("Accounting failure:", accountingError.message);
+      try {
+
+        await AccountingWorker.postAccrual(context);
 
         await pool.query(
           `
           UPDATE invoice_state_machine
-          SET current_state = 'EXCEPTION_REVIEW',
+          SET current_state = 'PAYMENT_EXECUTION',
               last_updated = NOW()
           WHERE invoice_id = $1
-            AND organization_id = $2
+          AND organization_id = $2
           `,
           [invoice_id, organization_id]
         );
@@ -249,7 +276,37 @@ async function processInvoice(invoice_id, organization_id) {
         await logAudit(
           invoice_id,
           organization_id,
-          "APPROVED",
+          "ACCOUNTING",
+          "PAYMENT_EXECUTION",
+          "Accrual posted"
+        );
+
+        await redis.xAdd("invoice_events", "*", {
+          invoice_id,
+          organization_id
+        });
+
+        return;
+
+      } catch (err) {
+
+        console.error("Accounting failure:", err.message);
+
+        await pool.query(
+          `
+          UPDATE invoice_state_machine
+          SET current_state = 'EXCEPTION_REVIEW',
+              last_updated = NOW()
+          WHERE invoice_id = $1
+          AND organization_id = $2
+          `,
+          [invoice_id, organization_id]
+        );
+
+        await logAudit(
+          invoice_id,
+          organization_id,
+          "ACCOUNTING",
           "EXCEPTION_REVIEW",
           "ACCOUNTING_FAILURE"
         );
@@ -273,10 +330,12 @@ async function processInvoice(invoice_id, organization_id) {
       decision.nextState !== "BLOCKED" &&
       decision.nextState !== "COMPLETED"
     ) {
+
       await redis.xAdd("invoice_events", "*", {
         invoice_id,
         organization_id
       });
+
     }
 
   } catch (err) {
@@ -289,7 +348,7 @@ async function processInvoice(invoice_id, organization_id) {
       SET retry_count = retry_count + 1,
           last_updated = NOW()
       WHERE invoice_id = $1
-        AND organization_id = $2
+      AND organization_id = $2
       `,
       [invoice_id, organization_id]
     );
@@ -333,14 +392,18 @@ async function listen() {
       );
 
     } catch (error) {
+
       console.error("Listener Error:", error);
+
     }
   }
 }
 
 async function start() {
+
   await redis.connect();
   await listen();
+
 }
 
 start();

@@ -9,15 +9,15 @@ export default class ExceptionReviewAgent extends BaseAgent {
 
   async plan() {
     return {
-      action: "CHECK_EXCEPTION_DECISION"
+      action: "CHECK_REVIEW_DECISION"
     };
   }
 
-  async act(plan) {
+  async act() {
 
     const res = await pool.query(
       `
-      SELECT id, decision
+      SELECT id, decision, reason
       FROM exception_review_decisions
       WHERE invoice_id = $1
       AND organization_id = $2
@@ -36,7 +36,8 @@ export default class ExceptionReviewAgent extends BaseAgent {
       success: true,
       decisionFound: true,
       decision: res.rows[0].decision,
-      decisionId: res.rows[0].id
+      decisionId: res.rows[0].id,
+      reason: res.rows[0].reason
     };
   }
 
@@ -67,21 +68,28 @@ export default class ExceptionReviewAgent extends BaseAgent {
 
     if (observation.decision === "APPROVE") {
       return {
-        nextState: "PENDING_APPROVAL",
-        reason: "Approved via dashboard"
+        nextState: "APPROVED",
+        reason: "Approved by company reviewer"
+      };
+    }
+
+    if (observation.decision === "ESCALATE") {
+      return {
+        nextState: "EXCEPTION_REVIEW",
+        reason: "Escalated for higher review"
       };
     }
 
     if (observation.decision === "BLOCK") {
       return {
         nextState: "BLOCKED",
-        reason: "Blocked via dashboard"
+        reason: "Blocked by reviewer"
       };
     }
 
     return {
       nextState: "EXCEPTION_REVIEW",
-      reason: "Invalid decision value"
+      reason: "Invalid decision"
     };
   }
 }

@@ -9,25 +9,26 @@ export default class PaymentAgent extends BaseAgent {
 
   async plan() {
     return {
-      action: "RUN_PAYMENT_PROCESS"
+      action: "RUN_PAYMENT_SCHEDULING"
     };
   }
 
-  async act(plan) {
+  async act() {
     return await PaymentWorker.execute(this.context);
   }
 
-  async evaluate(observation) {
+  async evaluate(result) {
 
-    if (!observation?.success) {
+    if (!result?.success) {
       return {
         retry: true,
-        reason: observation?.reason || "Payment failed"
+        reason: result?.reason || "Payment scheduling failed"
       };
     }
 
     return {
-      nextState: observation.nextState
+      nextState: result.nextState,
+      reason: "Payment scheduled successfully"
     };
   }
 }
