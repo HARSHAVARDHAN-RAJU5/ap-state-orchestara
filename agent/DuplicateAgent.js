@@ -48,8 +48,14 @@ export default class DuplicateAgent extends BaseAgent {
 
       case "DATA_MISSING":
         return {
-          nextState: "BLOCKED",
+          nextState: "WAITING_INFO",
           reason: observation.reason || "Extraction data missing"
+        };
+
+      case "ALREADY_PAID_DUPLICATE":
+        return {
+        nextState: "BLOCKED",
+        reason: "Invoice already paid earlier"
         };
 
       default:

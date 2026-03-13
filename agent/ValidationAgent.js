@@ -33,7 +33,6 @@ export default class ValidationAgent extends BaseAgent {
       };
     }
 
-    // 🔥 Direct governance route
     if (result.status === "EXCEPTION_REVIEW") {
       return {
         nextState: "EXCEPTION_REVIEW",
@@ -57,7 +56,7 @@ export default class ValidationAgent extends BaseAgent {
 
     if (result.status === "REVIEW_REQUIRED") {
 
-      const context = await this.buildRiskContext();
+      const context = await this.buildRiskContext(result.reason);
       const llmDecision = await this.callLLM(context);
 
       if (llmDecision === "PROCEED") {
@@ -70,7 +69,7 @@ export default class ValidationAgent extends BaseAgent {
       if (llmDecision === "WAIT") {
         return {
           nextState: "WAITING_INFO",
-          reason: "LLM requested additional vendor information"
+          reason: "Additional vendor or invoice information required"
         };
       }
 
@@ -86,14 +85,14 @@ export default class ValidationAgent extends BaseAgent {
     };
   }
 
-  async buildRiskContext() {
+  async buildRiskContext(reviewReason) {
 
     const extracted = await pool.query(
       `
       SELECT data
-      FROM invoice_extracted_data 
-      WHERE invoice_id = $1 
-        AND organization_id = $2
+      FROM invoice_extracted_data
+      WHERE invoice_id = $1
+      AND organization_id = $2
       `,
       [this.invoice_id, this.organization_id]
     );
@@ -101,34 +100,46 @@ export default class ValidationAgent extends BaseAgent {
     const validation = await pool.query(
       `
       SELECT *
-      FROM invoice_validation_results 
-      WHERE invoice_id = $1 
-        AND organization_id = $2
+      FROM invoice_validation_results
+      WHERE invoice_id = $1
+      AND organization_id = $2
       `,
       [this.invoice_id, this.organization_id]
     );
 
     return {
-      extracted: extracted.rows[0]?.data || {},
-      validation: validation.rows[0] || {}
+      review_reason: reviewReason,
+      extracted_data: extracted.rows[0]?.data || {},
+      validation_result: validation.rows[0] || {}
     };
   }
 
   async callLLM(context) {
 
     const prompt = `
-You are a financial risk analyst.
+You are an accounts payable risk analyst.
 
-Given this invoice validation result:
+An invoice failed automated validation and requires review.
 
-${JSON.stringify(context)}
+Review Reason:
+${context.review_reason}
 
-Decide:
-- PROCEED
-- WAIT
-- BLOCK
+Invoice Data:
+${JSON.stringify(context.extracted_data, null, 2)}
 
-Respond with only one word.
+Validation Record:
+${JSON.stringify(context.validation_result, null, 2)}
+
+Decide the safest next step for the AP system:
+
+PROCEED  -> invoice appears safe, continue processing
+WAIT     -> request additional information from vendor
+BLOCK    -> invoice appears suspicious or high risk
+
+Respond with ONLY one word:
+PROCEED
+WAIT
+BLOCK
 `;
 
     try {
@@ -144,6 +155,7 @@ Respond with only one word.
       const output = response.data?.response?.trim()?.toUpperCase();
 
       if (!output) return "BLOCK";
+
       if (output.includes("PROCEED")) return "PROCEED";
       if (output.includes("WAIT")) return "WAIT";
 

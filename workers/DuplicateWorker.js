@@ -10,7 +10,7 @@ export async function execute(context) {
 
   console.log("Running duplicate check for:", invoice_id);
 
-  // Tenant-isolated extracted JSON fetch
+  // Fetch extracted invoice data
   const result = await pool.query(
     `
     SELECT data
@@ -43,25 +43,48 @@ export async function execute(context) {
     };
   }
 
-  // Tenant-isolated duplicate check
-const duplicateCheck = await pool.query(
-  `
-  SELECT COUNT(*)
-  FROM invoice_extracted_data
-  WHERE organization_id = $1
-    AND data->>'invoice_number' = $2
-    AND data->>'vendor_name' = $3
-    AND (data->>'total')::numeric = $4
-    AND invoice_id <> $5
-  `,
-  [
-    organization_id,
-    invoice_number,
-    vendor_name,
-    total_amount,
-    invoice_id
-  ]
-);
+
+  const paidCheck = await pool.query(
+    `
+    SELECT 1
+    FROM paid_invoice_registry
+    WHERE organization_id = $1
+    AND invoice_number = $2
+    AND vendor_name = $3
+    LIMIT 1
+    `,
+    [
+      organization_id,
+      invoice_number,
+      vendor_name
+    ]
+  );
+
+  if (paidCheck.rows.length > 0) {
+    return {
+      success: true,
+      outcome: "ALREADY_PAID_DUPLICATE"
+    };
+  }
+
+  const duplicateCheck = await pool.query(
+    `
+    SELECT COUNT(*)
+    FROM invoice_extracted_data
+    WHERE organization_id = $1
+      AND data->>'invoice_number' = $2
+      AND data->>'vendor_name' = $3
+      AND (data->>'total_amount')::numeric = $4
+      AND invoice_id <> $5
+    `,
+    [
+      organization_id,
+      invoice_number,
+      vendor_name,
+      total_amount,
+      invoice_id
+    ]
+  );
 
   const count = parseInt(duplicateCheck.rows[0].count, 10);
 

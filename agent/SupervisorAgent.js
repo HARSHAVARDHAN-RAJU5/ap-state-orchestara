@@ -4,6 +4,7 @@ import IntakeExtractionAgent from "./IntakeExtractionAgent.js";
 import DuplicateAgent from "./DuplicateAgent.js";
 import ValidationAgent from "./ValidationAgent.js";
 import MatchingAgent from "./MatchingAgent.js";
+import ComplianceAgent from "./ComplianceAgent.js";
 import ApprovalAgent from "./ApprovalAgent.js";
 import PaymentAgent from "./PaymentAgent.js";
 import ExceptionReviewAgent from "./ExceptionReviewAgent.js";
@@ -59,6 +60,9 @@ export default class SupervisorAgent {
 
       case "MATCHING":
         return new MatchingAgent(this.context);
+
+      case "COMPLIANCE":
+        return new ComplianceAgent(this.context);
 
       case "PENDING_APPROVAL":
         return new ApprovalAgent(this.context);
