@@ -4,8 +4,14 @@ import redis from "../redisClient.js";
 
 const router = express.Router();
 
+/*
+POST /api/payment/:invoice_id/pay
+*/
+
 router.post("/:invoice_id/pay", async (req, res) => {
+
   try {
+
     const { invoice_id } = req.params;
 
     const stateRes = await pool.query(
@@ -18,7 +24,9 @@ router.post("/:invoice_id/pay", async (req, res) => {
     );
 
     if (!stateRes.rows.length) {
-      return res.status(404).json({ error: "Invoice not found" });
+      return res.status(404).json({
+        error: "Invoice not found"
+      });
     }
 
     const { current_state, organization_id } = stateRes.rows[0];
@@ -29,38 +37,49 @@ router.post("/:invoice_id/pay", async (req, res) => {
       });
     }
 
+    // mark payment paid
     await pool.query(
       `
       UPDATE invoice_payment_schedule
       SET payment_status = 'PAID',
           paid_at = NOW()
       WHERE invoice_id = $1
-        AND organization_id = $2
+      AND organization_id = $2
       `,
       [invoice_id, organization_id]
     );
 
+    // move invoice state
     await pool.query(
       `
       UPDATE invoice_state_machine
       SET current_state = 'COMPLETED'
       WHERE invoice_id = $1
-        AND organization_id = $2
+      AND organization_id = $2
       `,
       [invoice_id, organization_id]
     );
 
+    // wake orchestrator
     await redis.xAdd("invoice_events", "*", {
       invoice_id,
       organization_id
     });
 
-    return res.json({ message: "Payment executed successfully" });
+    return res.json({
+      message: "Payment executed successfully"
+    });
 
   } catch (err) {
+
     console.error(err);
-    return res.status(500).json({ error: "Internal server error" });
+
+    return res.status(500).json({
+      error: "Internal server error"
+    });
+
   }
+
 });
 
 export default router;

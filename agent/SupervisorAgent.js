@@ -7,6 +7,7 @@ import MatchingAgent from "./MatchingAgent.js";
 import ComplianceAgent from "./ComplianceAgent.js";
 import PaymentAgent from "./PaymentAgent.js";
 import ExceptionReviewAgent from "./ExceptionReviewAgent.js";
+import AccountingAgent from "./AccountingAgent.js";
 
 export default class SupervisorAgent {
 
@@ -69,13 +70,14 @@ export default class SupervisorAgent {
       case "EXCEPTION_REVIEW":
         return new ExceptionReviewAgent(this.context);
 
-      case "APPROVED":
       case "ACCOUNTING":
-      case "PAYMENT_EXECUTION":
+        return new AccountingAgent(this.context);
+
+      case "APPROVED":
         return {
           run: async () => ({
-            nextState: state,
-            reason: "Handled by orchestrator worker"
+            nextState: "ACCOUNTING",
+            reason: "Invoice approved, moving to accounting"
           })
         };
 

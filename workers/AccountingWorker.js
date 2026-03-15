@@ -1,69 +1,95 @@
-import AccountingService from "../modules/step8-accounting/accountingService.js";
 import db from "../db.js";
 
 class AccountingWorker {
 
-  static async postAccrual(context) {
+  static async run(context) {
+
     const { invoice_id, organization_id } = context;
 
-    // Prevent double booking
-    const alreadyBooked = await AccountingService.journalExists(
-      organization_id,
-      invoice_id,
-      "ACCRUAL"
+    // 1. Ensure accrual is posted
+    await AccountingWorker.postAccrual(context);
+
+    // 2. Fetch payment schedule
+    const res = await db.query(
+      `
+      SELECT payment_due_date, payment_status
+      FROM invoice_payment_schedule
+      WHERE invoice_id = $1
+      AND organization_id = $2
+      `,
+      [invoice_id, organization_id]
     );
 
-    if (alreadyBooked) {
+    if (!res.rows.length) {
+      throw new Error("Payment schedule missing");
+    }
+
+    const { payment_due_date, payment_status } = res.rows[0];
+
+    // If already paid
+    if (payment_status === "PAID") {
+      return {
+        nextState: "COMPLETED",
+        reason: "Invoice already paid"
+      };
+    }
+
+    const today = new Date();
+    const dueDate = new Date(payment_due_date);
+
+    // 3. Wait until due date (SLA loop)
+    if (today < dueDate) {
+      return {
+        nextState: "ACCOUNTING",
+        reason: "Waiting for payment due date"
+      };
+    }
+
+    // 4. Execute payment
+    await db.query(
+      `
+      UPDATE invoice_payment_schedule
+      SET payment_status = 'PAID',
+          paid_at = NOW()
+      WHERE invoice_id = $1
+      AND organization_id = $2
+      `,
+      [invoice_id, organization_id]
+    );
+
+    return {
+      nextState: "COMPLETED",
+      reason: "Payment executed"
+    };
+  }
+
+  static async postAccrual(context) {
+
+    const { invoice_id, organization_id } = context;
+
+    const check = await db.query(
+      `
+      SELECT 1
+      FROM journal_entries
+      WHERE invoice_id = $1
+      AND organization_id = $2
+      LIMIT 1
+      `,
+      [invoice_id, organization_id]
+    );
+
+    if (check.rows.length) {
       return;
     }
-// Fetch invoice financial details from extracted data
-const invoiceRes = await db.query(
-  `
-  SELECT 
-    (data->>'total_amount')::numeric AS total_amount,
-    (data->>'expense_category') AS expense_category
-  FROM invoice_extracted_data
-  WHERE invoice_id = $1
-    AND organization_id = $2
-  `,
-  [invoice_id, organization_id]
-);
 
-if (invoiceRes.rows.length === 0) {
-  throw new Error("Invoice extracted data not found for accounting");
-}
-
-const { total_amount, expense_category } = invoiceRes.rows[0];
-
-    // Get account mapping
-    const { expense_account_id, ap_account_id } =
-      await AccountingService.getAccountMapping(
-        organization_id,
-        expense_category
-      );
-
-    // Create journal entry
-    const journal_id = await AccountingService.createJournalEntry({
-      organization_id,
-      invoice_id,
-      entry_type: "ACCRUAL"
-    });
-
-    // Debit Expense
-    await AccountingService.createJournalLine({
-      journal_id,
-      account_id: expense_account_id,
-      debit_amount: total_amount,
-      credit_amount: 0
-    });
-
-    // Credit Accounts Payable
-    await AccountingService.createJournalLine({
-      journal_id,
-      account_id: ap_account_id,
-      debit_amount: 0,
-      credit_amount: total_amount
-    });
+    await db.query(
+      `
+      INSERT INTO journal_entries
+      (invoice_id, organization_id, entry_type, created_at)
+      VALUES ($1, $2, 'ACCRUAL', NOW())
+      `,
+      [invoice_id, organization_id]
+    );
   }
 }
 

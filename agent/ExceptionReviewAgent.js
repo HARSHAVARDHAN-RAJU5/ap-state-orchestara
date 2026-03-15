@@ -13,7 +13,13 @@ export default class ExceptionReviewAgent extends BaseAgent {
     };
   }
 
-  async act() {
+  async act(plan) {
+
+    if (plan.action !== "CHECK_REVIEW_DECISION") {
+      throw new Error("Unknown action for ExceptionReviewAgent");
+    }
+
+    const { invoice_id, organization_id } = this.context;
 
     const res = await pool.query(
       `
@@ -25,11 +31,14 @@ export default class ExceptionReviewAgent extends BaseAgent {
       ORDER BY decided_at DESC
       LIMIT 1
       `,
-      [this.invoice_id, this.organization_id]
+      [invoice_id, organization_id]
     );
 
     if (!res.rows.length) {
-      return { success: true, decisionFound: false };
+      return {
+        success: true,
+        decisionFound: false
+      };
     }
 
     return {
@@ -39,9 +48,12 @@ export default class ExceptionReviewAgent extends BaseAgent {
       decisionId: res.rows[0].id,
       reason: res.rows[0].reason
     };
+
   }
 
   async evaluate(observation) {
+
+    const { invoice_id, organization_id } = this.context;
 
     if (!observation?.success) {
       return {
@@ -52,10 +64,12 @@ export default class ExceptionReviewAgent extends BaseAgent {
 
     if (!observation.decisionFound) {
       return {
-        nextState: "EXCEPTION_REVIEW"
+        nextState: "EXCEPTION_REVIEW",
+        reason: "Waiting for reviewer decision"
       };
     }
 
+    // mark decision as processed
     await pool.query(
       `
       UPDATE exception_review_decisions
@@ -63,33 +77,41 @@ export default class ExceptionReviewAgent extends BaseAgent {
       WHERE id = $1
       AND organization_id = $2
       `,
-      [observation.decisionId, this.organization_id]
+      [observation.decisionId, organization_id]
     );
 
     if (observation.decision === "APPROVE") {
+
       return {
         nextState: "APPROVED",
-        reason: "Approved by company reviewer"
+        reason: "Approved by reviewer"
       };
+
     }
 
     if (observation.decision === "ESCALATE") {
+
       return {
         nextState: "EXCEPTION_REVIEW",
-        reason: "Escalated for higher review"
+        reason: "Escalated for further review"
       };
+
     }
 
     if (observation.decision === "BLOCK") {
+
       return {
         nextState: "BLOCKED",
-        reason: "Blocked by reviewer"
+        reason: observation.reason || "Blocked by reviewer"
       };
+
     }
 
     return {
       nextState: "EXCEPTION_REVIEW",
-      reason: "Invalid decision"
+      reason: "Invalid reviewer decision"
     };
+
   }
+
 }

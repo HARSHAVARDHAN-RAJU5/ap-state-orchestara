@@ -4,6 +4,16 @@ import redis from "../redisClient.js";
 
 const router = express.Router();
 
+/*
+POST /api/review/:invoice_id/decision
+
+Body:
+{
+  "decision": "APPROVE",
+  "comment": "Looks correct"
+}
+*/
+
 router.post("/:invoice_id/decision", async (req, res) => {
 
   try {
@@ -19,7 +29,6 @@ router.post("/:invoice_id/decision", async (req, res) => {
       });
     }
 
-    // fetch invoice state + org
     const stateRes = await pool.query(
       `
       SELECT current_state, organization_id
@@ -43,7 +52,7 @@ router.post("/:invoice_id/decision", async (req, res) => {
       });
     }
 
-    // record decision
+    // store reviewer decision
     await pool.query(
       `
       INSERT INTO exception_review_decisions
@@ -64,7 +73,7 @@ router.post("/:invoice_id/decision", async (req, res) => {
       ]
     );
 
-    // audit log
+    // audit trail
     await pool.query(
       `
       INSERT INTO audit_event_log

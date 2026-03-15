@@ -7,7 +7,6 @@ import SupervisorAgent from "./agent/SupervisorAgent.js";
 import * as NotificationWorker from "./workers/NotificationWorker.js";
 import PolicyEngine from "./core/PolicyEngine.js";
 import { reflect } from "./core/ReflectionService.js";
-import AccountingWorker from "./workers/AccountingWorker.js";
 
 const redis = createClient({
   url: "redis://127.0.0.1:6379"
@@ -53,15 +52,11 @@ const STATE_TRANSITIONS = {
   APPROVED: ["ACCOUNTING"],
 
   ACCOUNTING: [
-    "PAYMENT_EXECUTION",
-    "EXCEPTION_REVIEW"
-  ],
-
-  PAYMENT_EXECUTION: [
+    "ACCOUNTING",
     "COMPLETED",
+    "EXCEPTION_REVIEW",
     "BLOCKED"
   ]
-
 };
 
 async function logAudit(
@@ -221,11 +216,6 @@ async function processInvoice(invoice_id, organization_id) {
       return;
     }
 
-    if (decision.nextState === current_state) {
-      console.log("No state change.");
-      return;
-    }
-
     const allowed = STATE_TRANSITIONS[current_state] || [];
 
     if (!allowed.includes(decision.nextState)) {
@@ -255,65 +245,6 @@ async function processInvoice(invoice_id, organization_id) {
     );
 
     console.log("Moved to:", decision.nextState);
-
-    if (decision.nextState === "ACCOUNTING") {
-
-      try {
-
-        await AccountingWorker.postAccrual(context);
-
-        await pool.query(
-          `
-          UPDATE invoice_state_machine
-          SET current_state = 'PAYMENT_EXECUTION',
-              last_updated = NOW()
-          WHERE invoice_id = $1
-          AND organization_id = $2
-          `,
-          [invoice_id, organization_id]
-        );
-
-        await logAudit(
-          invoice_id,
-          organization_id,
-          "ACCOUNTING",
-          "PAYMENT_EXECUTION",
-          "Accrual posted"
-        );
-
-        await redis.xAdd("invoice_events", "*", {
-          invoice_id,
-          organization_id
-        });
-
-        return;
-
-      } catch (err) {
-
-        console.error("Accounting failure:", err.message);
-
-        await pool.query(
-          `
-          UPDATE invoice_state_machine
-          SET current_state = 'EXCEPTION_REVIEW',
-              last_updated = NOW()
-          WHERE invoice_id = $1
-          AND organization_id = $2
-          `,
-          [invoice_id, organization_id]
-        );
-
-        await logAudit(
-          invoice_id,
-          organization_id,
-          "ACCOUNTING",
-          "EXCEPTION_REVIEW",
-          "ACCOUNTING_FAILURE"
-        );
-
-        return;
-      }
-    }
 
     if (decision.nextState === "WAITING_INFO") {
 
