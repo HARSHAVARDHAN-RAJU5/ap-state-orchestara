@@ -12,7 +12,6 @@ export async function execute(context) {
     return { success: false, reason: "Approval configuration missing" };
   }
 
-  // Validate current state
   const stateCheck = await pool.query(
     `
     SELECT current_state
