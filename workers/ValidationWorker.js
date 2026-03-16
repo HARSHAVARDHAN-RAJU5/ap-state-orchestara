@@ -10,17 +10,15 @@ export async function execute(context) {
   const { invoice_id, organization_id, config } = context;
 
   if (!invoice_id || !organization_id) {
-    throw new Error("MatchingWorker requires invoice_id and organization_id");
+    throw new Error("ValidationWorker requires invoice_id and organization_id");
   }
 
-  // Ensure correct state
+  // verify state
   const stateCheck = await pool.query(
-    `
-    SELECT current_state
-    FROM invoice_state_machine
-    WHERE invoice_id = $1
-    AND organization_id = $2
-    `,
+    `SELECT current_state
+     FROM invoice_state_machine
+     WHERE invoice_id = $1
+     AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -28,18 +26,16 @@ export async function execute(context) {
     throw new Error("State record not found");
   }
 
-  if (stateCheck.rows[0].current_state !== "MATCHING") {
-    throw new Error("MatchingWorker executed in wrong state");
+  if (stateCheck.rows[0].current_state !== "VALIDATING") {
+    throw new Error("ValidationWorker executed in wrong state");
   }
 
-  // Load invoice
+  // load extracted invoice data
   const invoiceRes = await pool.query(
-    `
-    SELECT data
-    FROM invoice_extracted_data
-    WHERE invoice_id = $1
-    AND organization_id = $2
-    `,
+    `SELECT data
+     FROM invoice_extracted_data
+     WHERE invoice_id = $1
+     AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -52,160 +48,130 @@ export async function execute(context) {
 
   const invoice = invoiceRes.rows[0].data || {};
 
-  const invoiceTotal = toNumber(invoice.total);
-  const poNumber = invoice.po_number || null;
+  // --- FIELD CHECKS ---
+  const missingFields = [];
+  if (!invoice.invoice_number) missingFields.push("invoice_number");
+  if (!invoice.vendor_name)    missingFields.push("vendor_name");
+  if (!invoice.total_amount)   missingFields.push("total_amount");
+  if (!invoice.invoice_date)   missingFields.push("invoice_date");
 
-  // Load validation result
-  const validationRes = await pool.query(
-    `
-    SELECT vendor_id, bank_status
-    FROM invoice_validation_results
-    WHERE invoice_id = $1
-    AND organization_id = $2
-    `,
-    [invoice_id, organization_id]
-  );
-
-  if (!validationRes.rows.length) {
+  if (missingFields.length > 0) {
     return {
-      success: false,
-      reason: "Vendor validation result not found"
+      success: true,
+      status: "MISSING_INFO",
+      reason: `Missing required fields: ${missingFields.join(", ")}`
     };
   }
 
-  const { vendor_id, bank_status } = validationRes.rows[0];
-
-  const tolerance =
-    config?.matching?.price_variance_percentage ?? 0.02;
-
-  let po = null;
-  let missing_po_flag = false;
-  let price_variance_flag = false;
-  const bank_mismatch_flag = bank_status === "MISMATCH";
-
-  // Direct PO match
-  if (poNumber) {
-
-    const poRes = await pool.query(
-      `
-      SELECT *
-      FROM purchase_orders
-      WHERE po_number = $1
-      AND organization_id = $2
-      `,
-      [poNumber, organization_id]
-    );
-
-    if (poRes.rows.length) {
-      po = poRes.rows[0];
-    }
-  }
-
-  // Fallback vendor match
-  if (!po) {
-
-    const poRes = await pool.query(
-      `
-      SELECT *
-      FROM purchase_orders
-      WHERE vendor_id = $1
-      AND organization_id = $2
-      `,
-      [vendor_id, organization_id]
-    );
-
-    const matches = poRes.rows.filter(p => {
-
-      const poAmount = toNumber(p.total_amount);
-
-      if (!poAmount) return false;
-
-      const variance =
-        Math.abs(invoiceTotal - poAmount) / poAmount;
-
-      return variance <= tolerance;
-
-    });
-
-    if (matches.length === 1) {
-      po = matches[0];
-    } else {
-      missing_po_flag = true;
-    }
-  }
-
-  // Variance check
-  if (po) {
-
-    const poAmount = toNumber(po.total_amount);
-
-    if (poAmount) {
-
-      const variance =
-        Math.abs(invoiceTotal - poAmount) / poAmount;
-
-      if (variance > tolerance) {
-        price_variance_flag = true;
-      }
-
-    } else {
-      price_variance_flag = true;
-    }
-  }
-
-  // Compliance checks
+  // --- MATH CHECKS ---
   const subtotal = toNumber(invoice.subtotal);
-  const tax = toNumber(invoice.tax);
-  const total = toNumber(invoice.total);
+  const tax      = toNumber(invoice.tax);
+  const total    = toNumber(invoice.total_amount);
 
-  let tax_status = "PASS";
-
-  if (Math.abs(subtotal + tax - total) > 1) {
-    tax_status = "FAIL";
+  if (subtotal && tax && Math.abs(subtotal + tax - total) > 1) {
+    return {
+      success: true,
+      status: "REVIEW_REQUIRED",
+      reason: `Total mismatch: ${subtotal} + ${tax} ≠ ${total}`
+    };
   }
 
-  const highValueThreshold =
-    config?.approval?.high_value_threshold ?? Infinity;
+  // --- VENDOR CHECK ---
+  const vendorRes = await pool.query(
+    `SELECT vendor_id, bank_account, status, tax_id
+     FROM vendor_master
+     WHERE organization_id = $1
+     AND (legal_name ILIKE $2 OR tax_id = $3)
+     LIMIT 1`,
+    [organization_id, invoice.vendor_name, invoice.gstin || ""]
+  );
 
-  const high_value_flag = total > highValueThreshold;
+  if (!vendorRes.rows.length) {
+    return {
+      success: true,
+      status: "REVIEW_REQUIRED",
+      reason: `Vendor not found: ${invoice.vendor_name}`
+    };
+  }
 
-  // Persist results
+  const vendor = vendorRes.rows[0];
+
+  // check vendor is active
+  const legal_status = vendor.status === "ACTIVE" ? "PASS" : "FAIL";
+
+  // --- BANK CHECK ---
+  // check if invoice has a bank account field and if it matches vendor master
+  const invoiceBankAccount = invoice.bank_account || null;
+  let bank_status = "PASS";
+
+  if (invoiceBankAccount && invoiceBankAccount !== vendor.bank_account) {
+    bank_status = "MISMATCH";
+  }
+
+  // --- TAX ID CHECK ---
+  const tax_status = invoice.gstin && vendor.tax_id === invoice.gstin
+    ? "PASS"
+    : "UNVERIFIED";
+
+  // --- overall status ---
+  let overall_status = "VALID";
+
+  if (legal_status === "FAIL") {
+    overall_status = "BLOCKED";
+  } else if (bank_status === "MISMATCH") {
+    overall_status = "REVIEW_REQUIRED";
+  } else if (tax_status === "UNVERIFIED") {
+    overall_status = "REVIEW_REQUIRED";
+  }
+
+  // write to invoice_validation_results
   await pool.query(
-    `
-    INSERT INTO invoice_po_matching_results
-    (invoice_id, organization_id, po_number,
-     matching_status, missing_po_flag,
-     price_variance_flag, bank_mismatch_flag,
-     matched_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())
-    ON CONFLICT (invoice_id, organization_id)
-    DO UPDATE SET
-      po_number = EXCLUDED.po_number,
-      matching_status = EXCLUDED.matching_status,
-      missing_po_flag = EXCLUDED.missing_po_flag,
-      price_variance_flag = EXCLUDED.price_variance_flag,
-      bank_mismatch_flag = EXCLUDED.bank_mismatch_flag,
-      matched_at = NOW()
-    `,
+    `INSERT INTO invoice_validation_results
+      (invoice_id, organization_id, vendor_id,
+       legal_status, tax_status, bank_status,
+       overall_status, validated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+     ON CONFLICT (invoice_id, organization_id)
+     DO UPDATE SET
+       vendor_id      = EXCLUDED.vendor_id,
+       legal_status   = EXCLUDED.legal_status,
+       tax_status     = EXCLUDED.tax_status,
+       bank_status    = EXCLUDED.bank_status,
+       overall_status = EXCLUDED.overall_status,
+       validated_at   = NOW()`,
     [
       invoice_id,
       organization_id,
-      po ? po.po_number : null,
-      po ? "MATCHED" : "MISMATCH",
-      missing_po_flag,
-      price_variance_flag,
-      bank_mismatch_flag
+      vendor.vendor_id,
+      legal_status,
+      tax_status,
+      bank_status,
+      overall_status
     ]
   );
 
+  // return status for ValidationAgent to evaluate
+  if (overall_status === "BLOCKED") {
+    return {
+      success: true,
+      status: "BLOCKED",
+      reason: `Vendor is inactive: ${invoice.vendor_name}`
+    };
+  }
+
+  if (overall_status === "REVIEW_REQUIRED") {
+    return {
+      success: true,
+      status: "REVIEW_REQUIRED",
+      reason: bank_status === "MISMATCH"
+        ? "Vendor bank account mismatch detected"
+        : "Tax ID could not be verified"
+    };
+  }
+
   return {
     success: true,
-    signals: {
-      missing_po_flag,
-      price_variance_flag,
-      bank_mismatch_flag,
-      tax_status,
-      high_value_flag
-    }
+    status: "VALID",
+    reason: "Vendor validated successfully"
   };
 }

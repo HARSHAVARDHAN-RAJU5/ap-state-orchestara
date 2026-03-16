@@ -8,6 +8,7 @@ import ComplianceAgent from "./ComplianceAgent.js";
 import PaymentAgent from "./PaymentAgent.js";
 import ExceptionReviewAgent from "./ExceptionReviewAgent.js";
 import AccountingAgent from "./AccountingAgent.js";
+import ApprovalAgent from "./ApprovalAgent.js";
 
 export default class SupervisorAgent {
 
@@ -54,6 +55,9 @@ export default class SupervisorAgent {
 
       case "DUPLICATE_CHECK":
         return new DuplicateAgent(this.context);
+
+      case "PENDING_APPROVAL":
+        return new ApprovalAgent(this.context);
 
       case "VALIDATING":
         return new ValidationAgent(this.context);

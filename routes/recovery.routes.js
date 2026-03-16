@@ -12,9 +12,6 @@ const redis = createClient({
 
 await redis.connect();
 
-/**
- * Upload corrected document
- */
 router.post("/upload", upload.single("file"), async (req, res) => {
 
   const { token } = req.query;
@@ -61,10 +58,16 @@ router.post("/upload", upload.single("file"), async (req, res) => {
   );
 
   // 🔁 Re-emit event
+const orgRes = await pool.query(
+    `SELECT organization_id FROM invoice_state_machine WHERE invoice_id = $1`,
+    [invoice_id]
+);
+const organization_id = orgRes.rows[0]?.organization_id;
+
   await redis.xAdd(
-    "invoice_events",
-    "*",
-    { invoice_id }
+      "invoice_events",
+      "*",
+      { invoice_id, organization_id }
   );
 
   return res.json({

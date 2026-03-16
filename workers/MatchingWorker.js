@@ -25,7 +25,7 @@ export async function execute(context) {
 
   const invoice = invoiceRes.rows[0].data || {};
 
-  const invoiceTotal = toNumber(invoice.total);
+  const invoiceTotal = toNumber(invoice.total_amount || invoice.total);
   const poNumber = invoice.po_number || null;
 
   const validationRes = await pool.query(

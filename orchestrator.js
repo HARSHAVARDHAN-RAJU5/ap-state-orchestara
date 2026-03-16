@@ -39,11 +39,14 @@ const STATE_TRANSITIONS = {
     "BLOCKED"
   ],
 
-  PAYMENT_READY: ["EXCEPTION_REVIEW"],
+  PAYMENT_READY: ["PENDING_APPROVAL"],
+
+  PENDING_APPROVAL: ["EXCEPTION_REVIEW"],
 
   WAITING_INFO: ["RECEIVED"],
 
   EXCEPTION_REVIEW: [
+    "EXCEPTION_REVIEW",
     "APPROVED",
     "BLOCKED",
     "WAITING_INFO"
@@ -257,17 +260,17 @@ async function processInvoice(invoice_id, organization_id) {
       return;
     }
 
-    if (
-      decision.nextState !== "BLOCKED" &&
-      decision.nextState !== "COMPLETED"
-    ) {
+  if (
+    decision.nextState !== "BLOCKED" &&
+    decision.nextState !== "COMPLETED" &&
+    decision.nextState !== "EXCEPTION_REVIEW"
+  ) {
+    await redis.xAdd("invoice_events", "*", {
+      invoice_id,
+      organization_id
+    });
+  }
 
-      await redis.xAdd("invoice_events", "*", {
-        invoice_id,
-        organization_id
-      });
-
-    }
 
   } catch (err) {
 

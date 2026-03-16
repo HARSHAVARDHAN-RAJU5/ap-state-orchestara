@@ -23,7 +23,7 @@ export async function execute(context) {
 
   const taxResult = await evaluateTax(invoice);
 
-  const total = parseFloat(invoice.total || 0);
+  const total = parseFloat(invoice.total_amount || invoice.total || 0);
 
   const highValueThreshold =
     config?.approval?.high_value_threshold ?? Infinity;

@@ -44,8 +44,12 @@ export default class PolicyEngine {
     const approvalLevels = approvalRes.rows.map(row => ({
       min_amount: parseFloat(row.min_amount),
       max_amount: parseFloat(row.max_amount),
-      approval_level: row.approver_role
+      approver_role: row.approver_role
     }));
+
+    const highValueThreshold = approvalLevels.length
+      ? Math.max(...approvalLevels.map(l => l.min_amount))
+      : Infinity;
 
     const matchingConfig = matchingRes.rows[0] || {
       price_variance_percentage: 0.02
@@ -55,12 +59,14 @@ export default class PolicyEngine {
 
     const paymentConfig = paymentRes.rows[0] || {
       default_due_days: 30,
-      max_retry_count: 2
+      max_retry_count: 2,
+      default_payment_method: "BANK_TRANSFER"
     };
-
+    
     return {
       approval: {
-        levels: approvalLevels
+        levels: approvalLevels,
+        high_value_threshold: highValueThreshold
       },
       matching: matchingConfig,
       tax: taxConfig,

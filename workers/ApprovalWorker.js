@@ -8,36 +8,16 @@ export async function execute(context) {
     return { success: false, reason: "Missing invoice context" };
   }
 
-  if (!config?.approval) {
-    return { success: false, reason: "Approval configuration missing" };
+  if (!config?.approval?.levels?.length) {
+    return { success: false, reason: "Approval levels not configured" };
   }
 
-  const stateCheck = await pool.query(
-    `
-    SELECT current_state
-    FROM invoice_state_machine
-    WHERE invoice_id = $1
-      AND organization_id = $2
-    `,
-    [invoice_id, organization_id]
-  );
-
-  if (!stateCheck.rows.length) {
-    return { success: false, reason: "State record not found" };
-  }
-
-  if (stateCheck.rows[0].current_state !== "PENDING_APPROVAL") {
-    return { success: false, reason: "Invalid state for approval routing" };
-  }
-
-  // Fetch invoice financial data
+  // fetch invoice amount
   const invoiceRes = await pool.query(
-    `
-    SELECT data
-    FROM invoice_extracted_data
-    WHERE invoice_id = $1
-      AND organization_id = $2
-    `,
+    `SELECT data
+     FROM invoice_extracted_data
+     WHERE invoice_id = $1
+     AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -45,47 +25,47 @@ export async function execute(context) {
     return { success: false, reason: "Invoice data not found" };
   }
 
-  const invoiceData = invoiceRes.rows[0].data || {};
-  const invoiceTotal = parseFloat(invoiceData.total_amount || 0);
+  const invoiceTotal = parseFloat(
+    invoiceRes.rows[0].data?.total_amount || 0
+  );
 
   if (!invoiceTotal) {
     return { success: false, reason: "Invoice total missing" };
   }
 
-  // Determine approval level from config
-  let approvalLevel = "LEVEL_1";
+  // match invoice amount to correct approval tier
+  const levels = [...config.approval.levels]
+    .sort((a, b) => b.min_amount - a.min_amount);
 
-  if (invoiceTotal >= config.approval.high_value_threshold) {
-    approvalLevel = "LEVEL_3";
-  } else if (invoiceTotal >= config.approval.mid_value_threshold) {
-    approvalLevel = "LEVEL_2";
+  const matched = levels.find(l => invoiceTotal >= l.min_amount);
+
+  if (!matched) {
+    return { success: false, reason: "No matching approval tier found" };
   }
 
-  // Record approval routing
+  const required_approval_level = matched.approver_role;
+
+  // store in workflow table
   await pool.query(
-    `
-    INSERT INTO invoice_approval_workflow
-      (invoice_id, organization_id,
-       assigned_to, approval_level,
-       approval_status, created_at)
-    VALUES ($1,$2,$3,$4,$5,NOW())
+    `INSERT INTO invoice_approval_workflow
+      (invoice_id, organization_id, approval_level,
+       required_approval_level, approval_status, created_at)
+    VALUES ($1, $2, $3, $4, 'PENDING', NOW())
     ON CONFLICT (invoice_id, organization_id)
     DO UPDATE SET
-      assigned_to = EXCLUDED.assigned_to,
       approval_level = EXCLUDED.approval_level,
-      approval_status = EXCLUDED.approval_status
-    `,
+      required_approval_level = EXCLUDED.required_approval_level,
+      approval_status = EXCLUDED.approval_status`,
     [
       invoice_id,
       organization_id,
-      approvalLevel,
-      approvalLevel,
-      "PENDING"
+      required_approval_level,
+      required_approval_level
     ]
   );
 
   return {
     success: true,
-    approval_level: approvalLevel
+    required_approval_level
   };
 }

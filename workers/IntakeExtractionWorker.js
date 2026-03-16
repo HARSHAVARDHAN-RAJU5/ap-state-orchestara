@@ -1,9 +1,19 @@
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import axios from "axios";
 import pool from "../db.js";
 import pdfjs from "pdfjs-dist/legacy/build/pdf.js";
 
 const { getDocument } = pdfjs;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const standardFontDataUrl = path.join(
+  __dirname,
+  "../../../node_modules/pdfjs-dist/standard_fonts/"
+);
 
 export async function execute(context) {
 
@@ -13,14 +23,11 @@ export async function execute(context) {
     throw new Error("ExtractionWorker requires invoice_id and organization_id");
   }
 
-  // Verify state
   const stateCheck = await pool.query(
-    `
-    SELECT current_state
-    FROM invoice_state_machine
-    WHERE invoice_id = $1
-      AND organization_id = $2
-    `,
+    `SELECT current_state
+     FROM invoice_state_machine
+     WHERE invoice_id = $1
+     AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -32,14 +39,11 @@ export async function execute(context) {
     throw new Error("Invalid state for ExtractionWorker");
   }
 
-  // Get invoice file path
   const invoiceRes = await pool.query(
-    `
-    SELECT file_path
-    FROM invoices
-    WHERE invoice_id = $1
-      AND organization_id = $2
-    `,
+    `SELECT file_path
+     FROM invoices
+     WHERE invoice_id = $1
+     AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -53,21 +57,23 @@ export async function execute(context) {
     return { success: false, failure_type: "FILE_MISSING_ON_DISK" };
   }
 
-  // Read PDF
   let pdfDocument;
 
   try {
     const buffer = fs.readFileSync(filePath);
     const uint8Array = new Uint8Array(buffer);
 
-    const loadingTask = getDocument({ data: uint8Array });
+    const loadingTask = getDocument({
+      data: uint8Array,
+      standardFontDataUrl
+    });
+
     pdfDocument = await loadingTask.promise;
 
   } catch (err) {
     return { success: false, failure_type: "CORRUPTED_PDF" };
   }
 
-  // Extract text from all pages
   let text = "";
 
   try {
@@ -87,7 +93,6 @@ export async function execute(context) {
     return { success: false, failure_type: "LOW_QUALITY_PDF" };
   }
 
-  // LLM prompt
   const prompt = `
 You are an AI invoice extraction engine.
 
@@ -104,6 +109,7 @@ Fields:
 - invoice_date
 - due_date
 - po_number
+- expense_category (classify based on invoice content, must be one of: SOFTWARE, OFFICE_SUPPLIES, TRAVEL, UTILITIES, GENERAL)
 
 If numeric values contain currency symbols remove them.
 If a field is missing return null.
@@ -139,7 +145,6 @@ ${text}
     return { success: false, failure_type: "AI_PARSE_ERROR" };
   }
 
-  // Normalize numeric values
   if (structured.total_amount !== null && structured.total_amount !== undefined) {
     structured.total_amount = Number(
       String(structured.total_amount).replace(/[^0-9.]/g, "")
@@ -158,7 +163,6 @@ ${text}
     );
   }
 
-  // If critical fields missing → WAITING_INFO
   if (!structured.invoice_number) {
     return { success: false, failure_type: "MISSING_INVOICE_NUMBER" };
   }
@@ -167,24 +171,23 @@ ${text}
     return { success: false, failure_type: "MISSING_TOTAL_AMOUNT" };
   }
 
-  // Do NOT assume tax rate
-  // Only derive if subtotal + tax present but total missing
+  if (!structured.expense_category) {
+    structured.expense_category = "GENERAL";
+  }
+
   if (!structured.total_amount && structured.subtotal && structured.tax) {
     structured.total_amount = structured.subtotal + structured.tax;
   }
 
-  // Save structured result
   await pool.query(
-    `
-    INSERT INTO invoice_extracted_data
+    `INSERT INTO invoice_extracted_data
       (invoice_id, organization_id, data, extraction_status, extracted_at)
-    VALUES ($1, $2, $3, $4, NOW())
-    ON CONFLICT (invoice_id, organization_id)
-    DO UPDATE SET
-      data = EXCLUDED.data,
-      extraction_status = EXCLUDED.extraction_status,
-      extracted_at = NOW()
-    `,
+     VALUES ($1, $2, $3, $4, NOW())
+     ON CONFLICT (invoice_id, organization_id)
+     DO UPDATE SET
+       data = EXCLUDED.data,
+       extraction_status = EXCLUDED.extraction_status,
+       extracted_at = NOW()`,
     [
       invoice_id,
       organization_id,
@@ -197,5 +200,4 @@ ${text}
     success: true,
     outcome: "AI_EXTRACTION_SUCCESS"
   };
-
 }
