@@ -76,6 +76,11 @@ export async function execute(context) {
       AND data->>'vendor_name' = $3
       AND (data->>'total_amount')::numeric = $4
       AND invoice_id <> $5
+      AND invoice_id NOT IN (
+      SELECT invoice_id FROM invoice_state_machine
+      WHERE current_state IN ('BLOCKED', 'WAITING_INFO', 'COMPLETED')
+      AND organization_id = $1
+    )
     `,
     [
       organization_id,

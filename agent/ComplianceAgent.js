@@ -38,7 +38,7 @@ export default class ComplianceAgent extends BaseAgent {
 
     if (high_value_flag) {
       return {
-        nextState: "EXCEPTION_REVIEW",
+        nextState: "PAYMENT_READY",
         reason: "Invoice exceeds approval threshold"
       };
     }

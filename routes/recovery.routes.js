@@ -57,12 +57,20 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     [invoice_id]
   );
 
-  // 🔁 Re-emit event
 const orgRes = await pool.query(
     `SELECT organization_id FROM invoice_state_machine WHERE invoice_id = $1`,
     [invoice_id]
 );
 const organization_id = orgRes.rows[0]?.organization_id;
+
+  await pool.query(
+    `DELETE FROM invoice_extracted_data 
+    WHERE invoice_id = $1 AND organization_id = $2`,
+    [invoice_id, organization_id]
+  );
+
+  // 🔁 Re-emit event
+
 
   await redis.xAdd(
       "invoice_events",

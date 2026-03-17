@@ -25,6 +25,17 @@ export default class BaseAgent {
     throw new Error("evaluate() not implemented");
   }
 
+  // FIX T4-1: All logAgentAction calls are now fire-and-forget.
+  // Previously every log write was awaited inline. If the agent_action_log
+  // table had lock contention or the DB pool was exhausted, the log write
+  // would throw and crash the entire agent run — stopping invoice processing
+  // because of a logging failure. Logging should never block business logic.
+  log(payload) {
+    logAgentAction(payload).catch(err =>
+      console.error("Agent log write failed (non-fatal):", err.message)
+    );
+  }
+
   async run() {
 
     const state_name = this.constructor.name;
@@ -34,7 +45,7 @@ export default class BaseAgent {
       // PLAN
       const plan = await this.plan();
 
-      await logAgentAction({
+      this.log({
         invoice_id: this.invoice_id,
         organization_id: this.organization_id,
         agent_name: state_name,
@@ -48,7 +59,7 @@ export default class BaseAgent {
       // ACT
       const result = await this.act(plan);
 
-      await logAgentAction({
+      this.log({
         invoice_id: this.invoice_id,
         organization_id: this.organization_id,
         agent_name: state_name,
@@ -65,7 +76,7 @@ export default class BaseAgent {
       // EVALUATE
       const decision = await this.evaluate(observation);
 
-      await logAgentAction({
+      this.log({
         invoice_id: this.invoice_id,
         organization_id: this.organization_id,
         agent_name: state_name,
@@ -84,7 +95,7 @@ export default class BaseAgent {
 
     } catch (err) {
 
-      await logAgentAction({
+      this.log({
         invoice_id: this.invoice_id,
         organization_id: this.organization_id,
         agent_name: state_name,

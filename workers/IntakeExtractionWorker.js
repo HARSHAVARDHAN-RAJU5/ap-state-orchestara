@@ -163,6 +163,13 @@ ${text}
     );
   }
 
+  // FIX T1-1: Attempt to reconstruct total_amount BEFORE the guard check.
+  // Previously this block was AFTER the early return, making it dead code.
+  // Real invoices often have subtotal + tax but no explicit total field.
+  if (!structured.total_amount && structured.subtotal && structured.tax) {
+    structured.total_amount = structured.subtotal + structured.tax;
+  }
+
   if (!structured.invoice_number) {
     return { success: false, failure_type: "MISSING_INVOICE_NUMBER" };
   }
@@ -173,10 +180,6 @@ ${text}
 
   if (!structured.expense_category) {
     structured.expense_category = "GENERAL";
-  }
-
-  if (!structured.total_amount && structured.subtotal && structured.tax) {
-    structured.total_amount = structured.subtotal + structured.tax;
   }
 
   await pool.query(

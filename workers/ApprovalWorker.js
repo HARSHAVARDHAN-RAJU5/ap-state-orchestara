@@ -65,7 +65,7 @@ export async function execute(context) {
   );
 
   return {
-    success: true,
-    required_approval_level
-  };
-}
+  success: true,
+  required_approval_level,
+  invoiceTotal
+};}
