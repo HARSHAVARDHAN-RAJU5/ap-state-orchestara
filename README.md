@@ -1,258 +1,345 @@
+<p align="center">
+  <h1>AI Accounts Payable Autonomous Agent</h1>
+  <p>State-Driven Multi-Agent Financial Orchestration Engine</p>
+</p>
 # AI Accounts Payable Autonomous Agent
+## State-Driven Multi-Agent Financial Orchestration Engine
 
-State-driven multi-agent Accounts Payable system that autonomously ingests invoices, validates financial correctness, performs PO matching, evaluates risk using AI, routes approvals, executes payments, and maintains a full audit trail.
+A production-style system designed to autonomously manage the **end-to-end invoice lifecycle — from ingestion to final payment — using a deterministic state machine to govern AI reasoning.**
 
-The system is built around a deterministic state machine with controlled AI reasoning and strict financial guardrails.
-
----
-
-# Architecture Overview
-
-The system follows a layered, state-driven architecture:
-
-- Orchestrator controls all invoice state transitions
-- Workers perform deterministic execution tasks
-- Agents perform reasoning and decision mapping
-- PostgreSQL stores authoritative system state
-- Redis enables event-driven orchestration
-- Guardrails enforce financial correctness and compliance
-
-All state mutations occur only through the orchestrator.
+This architecture is built for **high-stakes financial environments** where **auditability, safety, and deterministic control are critical.**
 
 ---
 
-# Project Structure
+# 📺 Technical Demo & Walkthrough
 
-senitac/
+**Demo Video**  
+https://drive.google.com/file/d/1Dg9g4yk35coTcb8iav1C01iFJT0RRo7T/view
 
-agent/
-- ApprovalAgent.js
-- BaseAgent.js
-- DuplicateAgent.js
-- ExceptionReviewAgent.js
-- IntakeExtractionAgent.js
-- MatchingAgent.js
-- PaymentAgent.js
-- SupervisorAgent.js
-- ValidationAgent.js
+In this **4-minute walkthrough**, the system architecture is demonstrated while processing an invoice with a **PO mismatch exception**.
 
-modules/
-- step1-intake/
-- step2-extraction/
-- step3-validation/
-- step4-matching/
-- step5-compliance/
-- step6-approval/
-- step7-payment/
-- step8-accounting/
+### The demo shows
 
-workers/
-- AccountingWorker.js
-- ApprovalWorker.js
-- DuplicateWorker.js
-- IntakeExtractionWorker.js
-- MatchingWorker.js
-- NotificationWorker.js
-- PaymentWorker.js
-- ValidationWorker.js
-
-monitoring/
-- sla_monitor.js
-
-routes/
-
-test/
-
-root files:
-- app.js
-- orchestrator.js
-- db.js
-- emit.js
-- redisClient.js
-- package.json
-- .env
+- State-driven orchestration of the invoice lifecycle  
+- Exception routing through **EXCEPTION_REVIEW**  
+- Manual approval flow via terminal command  
+- Full forensic audit trail of the system decisions  
 
 ---
 
-# Core Concepts
+# 🏗️ Core Engineering Principles
 
-State Machine Lifecycle:
+## Deterministic Control
 
-RECEIVED  
-STRUCTURED  
-DUPLICATE_CHECK  
-VALIDATING  
-MATCHING  
-EXCEPTION_REVIEW  
-WAITING_INFO  
-PENDING_APPROVAL  
-APPROVED  
-PAYMENT_READY  
-COMPLETED  
-BLOCKED  
+The system strictly separates **AI reasoning** from **financial execution**.
 
-Transitions are strictly enforced through a STATE_TRANSITIONS policy.
+**AI Agents**
+- Perform analysis, classification, and anomaly detection
+- Provide insights but cannot mutate the database
+
+**Workers**
+- Deterministic execution services
+- Responsible for state transitions and financial mutations
+
+This design prevents **LLM hallucinations from affecting financial records.**
 
 ---
 
-# Orchestrator
+## Multi-Tenant Policy Engine
 
-File: orchestrator.js
+Organizations can configure financial policies dynamically without modifying code.
 
-Responsibilities:
+Examples include:
 
-- Reads invoice current_state
-- Selects appropriate worker
-- Executes worker
-- Invokes agent if reasoning required
-- Validates next state
-- Persists transition
-- Emits next event
+- Matching tolerance (e.g. **0.01% variance**)  
+- Approval thresholds  
+- Payment policies  
+- SLA rules  
 
-The orchestrator is the only component allowed to mutate invoice state.
+Policies are stored in **organization-scoped configuration tables.**
 
 ---
 
-# Workers (Deterministic Layer)
+## Audit-First Design
 
-Workers execute financial operations:
+Every state transition creates an immutable record in:
 
-- IntakeExtractionWorker — invoice ingestion and structuring
-- DuplicateWorker — duplicate detection
-- ValidationWorker — invoice validation
-- MatchingWorker — purchase order matching
-- ApprovalWorker — approval routing
-- PaymentWorker — payment scheduling and execution
-- AccountingWorker — accounting entry creation
-- NotificationWorker — notifications and alerts
+audit_event_log
 
-Workers do not perform autonomous decision-making.
+Each audit record captures:
 
----
+- Actor identity
+- Timestamp
+- Previous state
+- New state
+- Reason for transition
 
-# Agents (Reasoning Layer)
-
-Agents perform reasoning and decision mapping:
-
-- MatchingAgent — AI-based risk reasoning
-- ValidationAgent — validation reasoning
-- ExceptionReviewAgent — exception handling
-- SupervisorAgent — coordination logic
-
-Agents cannot directly update database state.
+This provides a **SOC2-ready audit framework.**
 
 ---
 
-# Data Layer
+## Strategic SLA Management
 
-Database: PostgreSQL  
-Event Layer: Redis Streams  
+An automated SLA monitoring engine ensures:
 
-Core tables:
-
-- vendor_master
-- invoices
-- invoice_line_items
-- purchase_orders
-- goods_receipts
-- invoice_state_machine
-- invoice_approval_workflow
-- audit_event_log
-
-All records use organization_id for strict multi-tenant isolation.
+- Payments are scheduled based on **invoice due dates**
+- **Early payment discount windows** are captured
+- Late payment risk is minimized
+- Corporate **working capital is optimized**
 
 ---
 
-# Guardrails and Safety Controls
+# 🛠️ Technical Architecture
 
-The system enforces financial safety using:
+## State Machine Lifecycle
 
-- Deterministic state transitions
-- Duplicate invoice detection
-- PO tolerance validation
-- Bank mismatch detection
-- Human approval enforcement
-- Immutable audit logging
-- AI restricted from mutating financial state
+The invoice lifecycle follows a strict deterministic state machine:
+
+RECEIVED
+↓
+STRUCTURED
+↓
+DUPLICATE_CHECK
+↓
+VALIDATING
+↓
+MATCHING
+↓
+EXCEPTION_REVIEW
+↓
+PENDING_APPROVAL
+↓
+APPROVED
+↓
+PAYMENT_READY
+↓
+COMPLETED
+
+Additional system safety states:
+WAITING_INFO
+BLOCKED
+
+
+All transitions are enforced by the **Orchestrator**.
 
 ---
 
-# Technology Stack
+## Orchestration Layer
 
-Backend:
-- Node.js
-- Express.js
+### The Orchestrator
 
-Database:
-- PostgreSQL
+The **Orchestrator** is the central authority responsible for:
 
-Event Streaming:
-- Redis
+- Managing state transitions
+- Publishing events to the event bus
+- Enforcing guardrails
+- Coordinating agents and workers
 
-AI:
-- LLM integration for risk classification
-
-Architecture:
-- State-driven multi-agent orchestration
+It maintains the authoritative state stored in **PostgreSQL**.
 
 ---
 
-# How to Run
+### Redis Event Bus
 
-Step 1: Install dependencies
+The system uses **Redis Streams** for asynchronous communication.
+
+Benefits:
+
+- Horizontal scalability
+- Event-driven architecture
+- Independent worker processing
+- Non-blocking system execution
+
+---
+
+## Bounded AI Reasoning
+
+AI is used only for **non-deterministic reasoning tasks**, such as:
+
+- Risk classification
+- Matching anomaly interpretation
+- Exception reasoning
+
+Model used:
+
+Ollama + Llama3
+
+The AI layer **never performs financial mutations**.
+
+---
+
+# 📂 Project Structure
+
+ap-state-orchestrara/
+
+ap-state-orchestrara/
+
+├── agent/ # AI reasoning agents
+│ ├── MatchingAgent
+│ ├── ValidationAgent
+│ └── ExceptionReviewAgent
+│
+├── workers/ # Deterministic execution workers
+│ ├── ExtractionWorker
+│ ├── DuplicateWorker
+│ ├── MatchingWorker
+│ ├── ApprovalWorker
+│ └── PaymentWorker
+│
+├── modules/ # Core invoice lifecycle modules
+│
+├── monitoring/ # SLA monitoring and payment scheduling
+│
+├── orchestrator.js # Central state-machine orchestrator
+├── redisClient.js # Redis Streams configuration
+└── db.js # PostgreSQL connection
+
+
+---
+
+# 📊 Data Layer & Safety
+
+## Database
+
+**PostgreSQL**
+
+Used as the **authoritative system of record**.
+
+Key properties:
+
+- Strict `organization_id` multi-tenant isolation
+- Financial data consistency
+- Transactional safety
+
+---
+
+## Event Layer
+
+**Redis Streams**
+
+Provides:
+
+- Event-driven orchestration
+- Asynchronous task execution
+- Distributed system scalability
+
+---
+
+## Financial Guardrails
+
+The system includes several financial safety checks.
+
+### 3-Way Matching
+
+Invoice
+vs
+Purchase Order
+vs
+Goods Receipt
+
+
+Ensures invoice accuracy before payment approval.
+
+---
+
+### Duplicate Invoice Detection
+
+Invoices are checked using **hash-based fingerprinting** to detect duplicate submissions.
+
+---
+
+### Fraud Protection
+
+Built-in fraud detection mechanisms include:
+
+- **Bank account mismatch alerts**
+- Vendor verification workflows
+- AI-assisted risk classification
+
+---
+
+# 🚀 Setup & Execution
+
+## Prerequisites
+
+Ensure the following services are running.
+
+### PostgreSQL
+
+Start PostgreSQL locally.
+
+---
+
+### Redis (Docker)
+
+Run Redis Stack:
+
+bash
+docker run -d \
+  --name redis-stack \
+  -p 6379:6379 \
+  -p 8001:8001 \
+  redis/redis-stack:latest
+
+---
+
+### Ollama
+
+Install Ollama and run the Llama3 model:
+
+ollama run llama3
+
+---
+
+## Install Dependencies
 
 npm install
 
-Step 2: Start application
-
-npm start
-
-Requirements:
-
-- PostgreSQL running
-- Redis running
-- Environment variables configured in .env
 
 ---
 
-# Testing
+## Start the System
 
-Tests are located in:
-
-test/
-
-Run tests using:
-
-npm test
+The system requires **two services** to run.
 
 ---
 
-# MVP Scope
+### Start the Orchestration Engine
 
-The MVP supports:
+node orchestrator.js
 
-- Autonomous invoice processing
-- Deterministic validation and matching
-- AI-assisted risk evaluation
-- Human approval workflow
-- Payment scheduling and execution
-- Exception handling and recovery
-- Full audit traceability
 
 ---
 
-# Design Guarantees
+### Start the SLA Monitor
 
-- Deterministic state enforcement
-- Controlled AI reasoning
-- Human governance over financial decisions
-- Full audit traceability
-- Multi-tenant isolation
+
+node monitoring/sla_monitor.js
+
+
+This service manages:
+
+- payment scheduling  
+- due-date monitoring  
+- escalation handling  
 
 ---
 
-# Author
+## 📄 Technical Documentation
 
-Harshavardhan R  
-AI Engineer Internship Submission  
+For deeper technical details including:
+
+- architecture design decisions  
+- system ER diagrams  
+- state machine explanation  
+- failure recovery strategies  
+
+Refer to the **Technical Design Document (PDF).**
+https://drive.google.com/file/d/1gkuYZf6iZAvy8Bgy7jLMgqdrkYa0sMr8/view?usp=drive_link
+---
+
+## 👨‍💻 Author
+
+**Harshavardhan R**  
+AI Systems Engineering  
 2026

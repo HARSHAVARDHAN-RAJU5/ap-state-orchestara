@@ -16,10 +16,14 @@ redis.on("error", (err) => {
   console.error("Redis Error:", err);
 });
 
+<<<<<<< HEAD
 const STATE_TRANSITIONS = {
 
   RECEIVED: ["STRUCTURED", "WAITING_INFO"],
 
+=======
+const STATE_TRANSITIONS = {  RECEIVED: ["STRUCTURED", "WAITING_INFO"],
+>>>>>>> 334e7eaa60325a69e2de3c1bc1fe5a7582d0439e
   STRUCTURED: ["DUPLICATE_CHECK", "BLOCKED"],
 
   DUPLICATE_CHECK: ["VALIDATING", "BLOCKED"],
@@ -256,7 +260,7 @@ async function processInvoice(invoice_id, organization_id) {
         organization_id,
         reason: decision.reason
       });
-
+git pull origin main --rebase
       return;
     }
 

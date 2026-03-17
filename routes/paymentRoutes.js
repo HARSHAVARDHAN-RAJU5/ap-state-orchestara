@@ -29,10 +29,31 @@ router.post("/:invoice_id/pay", async (req, res) => {
 
     // Log the manual trigger in audit
     await pool.query(
+<<<<<<< HEAD
       `INSERT INTO audit_event_log
        (invoice_id, organization_id, old_state, new_state, reason)
        VALUES ($1, $2, $3, $4, $5)`,
       [invoice_id, organization_id, "PAYMENT_READY", "PAYMENT_READY", "Manual payment trigger via API"]
+=======
+      `
+      
+      SET payment_status = 'PAID',
+          paid_at = NOW()
+      WHERE invoice_id = $1
+        AND organization_id = $2
+      `,
+      [invoice_id, organization_id]
+    );
+
+    await pool.query(
+      `
+      UPDATE invoice_state_machine
+      SET current_state = 'COMPLETED'
+      WHERE invoice_id = $1
+        AND organization_id = $2
+      `,
+      [invoice_id, organization_id]
+>>>>>>> 334e7eaa60325a69e2de3c1bc1fe5a7582d0439e
     );
 
     // Wake orchestrator — let it handle the state transition properly

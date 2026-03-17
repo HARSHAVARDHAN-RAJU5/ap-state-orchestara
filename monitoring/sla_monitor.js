@@ -62,7 +62,59 @@ setInterval(async () => {
             organization_id
           });
 
+<<<<<<< HEAD
           console.log("Payment trigger emitted:", invoice_id);
+=======
+            // Mark payment completed
+            await client.query(
+              `
+              UPDATE invoice_payment_schedule
+              SET payment_status = 'PAID',
+                  paid_at = NOW()
+              WHERE payment_id = $1
+              `,
+              [payment_id]
+            );
+
+            // Move invoice to COMPLETED
+            await client.query(
+              `
+              UPDATE invoice_state_machine
+              SET current_state = 'COMPLETED',
+                  last_updated = NOW()
+              WHERE invoice_id = $1
+                AND organization_id = $2
+              `,
+              [invoice_id, organization_id]
+            );
+
+            // Audit log
+            await client.query(
+              `
+              INSERT INTO audit_event_log
+              (invoice_id, organization_id, old_state, new_state, reason)
+              VALUES ($1,$2,$3,$4,$5)
+              `,
+              [
+                invoice_id,
+                organization_id,
+                "PAYMENT_READY",
+                "COMPLETED",
+                "Auto payment executed by SLA monitor"
+              ]
+            );
+
+            await client.query("COMMIT");
+
+            console.log("Payment executed:", invoice_id);
+
+          } catch (err) {
+            await client.query("ROLLBACK");
+            console.error("Payment execution failed:", err.message);
+          } finally {
+            client.release();
+          }
+>>>>>>> 334e7eaa60325a69e2de3c1bc1fe5a7582d0439e
         }
 
         continue;
