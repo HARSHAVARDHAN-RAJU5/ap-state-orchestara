@@ -16,54 +16,19 @@ redis.on("error", (err) => {
   console.error("Redis Error:", err);
 });
 
-<<<<<<< HEAD
 const STATE_TRANSITIONS = {
-
   RECEIVED: ["STRUCTURED", "WAITING_INFO"],
-
-=======
-const STATE_TRANSITIONS = {  RECEIVED: ["STRUCTURED", "WAITING_INFO"],
->>>>>>> 334e7eaa60325a69e2de3c1bc1fe5a7582d0439e
   STRUCTURED: ["DUPLICATE_CHECK", "BLOCKED"],
-
   DUPLICATE_CHECK: ["VALIDATING", "BLOCKED"],
-
   VALIDATING: ["MATCHING", "WAITING_INFO", "BLOCKED", "EXCEPTION_REVIEW"],
-
-  MATCHING: [
-    "COMPLIANCE",
-    "WAITING_INFO",
-    "EXCEPTION_REVIEW",
-    "BLOCKED"
-  ],
-
-  COMPLIANCE: [
-    "PAYMENT_READY",
-    "EXCEPTION_REVIEW",
-    "BLOCKED"
-  ],
-
+  MATCHING: ["COMPLIANCE", "WAITING_INFO", "EXCEPTION_REVIEW", "BLOCKED"],
+  COMPLIANCE: ["PAYMENT_READY", "EXCEPTION_REVIEW", "BLOCKED"],
   PAYMENT_READY: ["PENDING_APPROVAL"],
-
   PENDING_APPROVAL: ["EXCEPTION_REVIEW"],
-
   WAITING_INFO: ["RECEIVED"],
-
-  EXCEPTION_REVIEW: [
-    "EXCEPTION_REVIEW",
-    "APPROVED",
-    "BLOCKED",
-    "WAITING_INFO"
-  ],
-
+  EXCEPTION_REVIEW: ["EXCEPTION_REVIEW", "APPROVED", "BLOCKED", "WAITING_INFO"],
   APPROVED: ["ACCOUNTING"],
-
-  ACCOUNTING: [
-    "ACCOUNTING",
-    "COMPLETED",
-    "EXCEPTION_REVIEW",
-    "BLOCKED"
-  ]
+  ACCOUNTING: ["ACCOUNTING", "COMPLETED", "EXCEPTION_REVIEW", "BLOCKED"]
 };
 
 async function logAudit(
@@ -73,13 +38,10 @@ async function logAudit(
   new_state,
   reason = null
 ) {
-
   await pool.query(
-    `
-    INSERT INTO audit_event_log
-    (invoice_id, organization_id, old_state, new_state, reason)
-    VALUES ($1, $2, $3, $4, $5)
-    `,
+    `INSERT INTO audit_event_log
+     (invoice_id, organization_id, old_state, new_state, reason)
+     VALUES ($1, $2, $3, $4, $5)`,
     [invoice_id, organization_id, old_state, new_state, reason || null]
   );
 }
@@ -87,12 +49,10 @@ async function logAudit(
 async function processInvoice(invoice_id, organization_id) {
 
   const stateRes = await pool.query(
-    `
-    SELECT current_state, retry_count
-    FROM invoice_state_machine
-    WHERE invoice_id = $1
-    AND organization_id = $2
-    `,
+    `SELECT current_state, retry_count
+     FROM invoice_state_machine
+     WHERE invoice_id = $1
+     AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -133,14 +93,12 @@ async function processInvoice(invoice_id, organization_id) {
       if (allowed.includes(reflection.overrideState)) {
 
         await pool.query(
-          `
-          UPDATE invoice_state_machine
-          SET current_state = $1,
-              retry_count = 0,
-              last_updated = NOW()
-          WHERE invoice_id = $2
-          AND organization_id = $3
-          `,
+          `UPDATE invoice_state_machine
+           SET current_state = $1,
+               retry_count = 0,
+               last_updated = NOW()
+           WHERE invoice_id = $2
+           AND organization_id = $3`,
           [reflection.overrideState, invoice_id, organization_id]
         );
 
@@ -175,19 +133,16 @@ async function processInvoice(invoice_id, organization_id) {
 
     if (decision.retry === true) {
 
-      const maxRetry =
-        context.config?.payment?.max_retry_count ?? 2;
+      const maxRetry = context.config?.payment?.max_retry_count ?? 2;
 
       if (retry_count >= maxRetry) {
 
         await pool.query(
-          `
-          UPDATE invoice_state_machine
-          SET current_state = 'BLOCKED',
-              last_updated = NOW()
-          WHERE invoice_id = $1
-          AND organization_id = $2
-          `,
+          `UPDATE invoice_state_machine
+           SET current_state = 'BLOCKED',
+               last_updated = NOW()
+           WHERE invoice_id = $1
+           AND organization_id = $2`,
           [invoice_id, organization_id]
         );
 
@@ -204,13 +159,11 @@ async function processInvoice(invoice_id, organization_id) {
       }
 
       await pool.query(
-        `
-        UPDATE invoice_state_machine
-        SET retry_count = retry_count + 1,
-            last_updated = NOW()
-        WHERE invoice_id = $1
-        AND organization_id = $2
-        `,
+        `UPDATE invoice_state_machine
+         SET retry_count = retry_count + 1,
+             last_updated = NOW()
+         WHERE invoice_id = $1
+         AND organization_id = $2`,
         [invoice_id, organization_id]
       );
 
@@ -232,14 +185,12 @@ async function processInvoice(invoice_id, organization_id) {
     }
 
     await pool.query(
-      `
-      UPDATE invoice_state_machine
-      SET current_state = $1,
-          retry_count = 0,
-          last_updated = NOW()
-      WHERE invoice_id = $2
-      AND organization_id = $3
-      `,
+      `UPDATE invoice_state_machine
+       SET current_state = $1,
+           retry_count = 0,
+           last_updated = NOW()
+       WHERE invoice_id = $2
+       AND organization_id = $3`,
       [decision.nextState, invoice_id, organization_id]
     );
 
@@ -254,40 +205,35 @@ async function processInvoice(invoice_id, organization_id) {
     console.log("Moved to:", decision.nextState);
 
     if (decision.nextState === "WAITING_INFO") {
-
       await NotificationWorker.execute({
         invoice_id,
         organization_id,
         reason: decision.reason
       });
-git pull origin main --rebase
       return;
     }
 
-  if (
-    decision.nextState !== "BLOCKED" &&
-    decision.nextState !== "COMPLETED" &&
-    decision.nextState !== "EXCEPTION_REVIEW"
-  ) {
-    await redis.xAdd("invoice_events", "*", {
-      invoice_id,
-      organization_id
-    });
-  }
-
+    if (
+      decision.nextState !== "BLOCKED" &&
+      decision.nextState !== "COMPLETED" &&
+      decision.nextState !== "EXCEPTION_REVIEW"
+    ) {
+      await redis.xAdd("invoice_events", "*", {
+        invoice_id,
+        organization_id
+      });
+    }
 
   } catch (err) {
 
     console.error("Supervisor failure:", err.message);
 
     await pool.query(
-      `
-      UPDATE invoice_state_machine
-      SET retry_count = retry_count + 1,
-          last_updated = NOW()
-      WHERE invoice_id = $1
-      AND organization_id = $2
-      `,
+      `UPDATE invoice_state_machine
+       SET retry_count = retry_count + 1,
+           last_updated = NOW()
+       WHERE invoice_id = $1
+       AND organization_id = $2`,
       [invoice_id, organization_id]
     );
   }
@@ -330,18 +276,14 @@ async function listen() {
       );
 
     } catch (error) {
-
       console.error("Listener Error:", error);
-
     }
   }
 }
 
 async function start() {
-
   await redis.connect();
   await listen();
-
 }
 
 start();
