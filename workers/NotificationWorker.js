@@ -1,6 +1,9 @@
 import pool from "../db.js";
 import crypto from "crypto";
 
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
+const APP_URL    = process.env.APP_URL    || "https://yourdomain.com";
+
 async function generateEmailBody(invoiceId, issueContext, recoveryLink) {
 
   const prompt = `
@@ -25,7 +28,7 @@ Instructions:
 - Return only the email body text
 `;
 
-  const response = await fetch("http://127.0.0.1:11434/api/generate", {
+  const response = await fetch(`${OLLAMA_URL}/api/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -59,21 +62,17 @@ export async function execute(context) {
 
   const token = crypto.randomBytes(32).toString("hex");
 
-  const recoveryLink =
-    `https://yourdomain.com/${organization_id}/api/recovery/upload?token=${token}`;
+  const recoveryLink = `${APP_URL}/${organization_id}/api/recovery/upload?token=${token}`;
 
   await pool.query(
-    `
-    UPDATE invoice_state_machine
-    SET waiting_since = NOW(),
-        waiting_deadline = NOW() + INTERVAL '10 days',
-        verification_token = $1,
-        token_expiry = NOW() + INTERVAL '10 days',
-        waiting_reason = $2,
-        last_updated = NOW()
-    WHERE invoice_id = $3
-    AND organization_id = $4
-    `,
+    `UPDATE invoice_state_machine
+     SET waiting_since      = NOW(),
+         waiting_deadline   = NOW() + INTERVAL '10 days',
+         verification_token = $1,
+         token_expiry       = NOW() + INTERVAL '10 days',
+         waiting_reason     = $2,
+         last_updated       = NOW()
+     WHERE invoice_id = $3 AND organization_id = $4`,
     [token, reason, invoice_id, organization_id]
   );
 
@@ -82,18 +81,14 @@ export async function execute(context) {
   try {
 
     const validationRes = await pool.query(
-      `
-      SELECT legal_status, bank_status, tax_status
-      FROM invoice_validation_results
-      WHERE invoice_id = $1
-      AND organization_id = $2
-      `,
+      `SELECT legal_status, bank_status, tax_status
+       FROM invoice_validation_results
+       WHERE invoice_id = $1 AND organization_id = $2`,
       [invoice_id, organization_id]
     );
 
     if (validationRes.rows.length) {
       const v = validationRes.rows[0];
-
       issueContext = `
 Reason: ${reason}
 
@@ -111,11 +106,7 @@ Vendor Validation Summary:
   let emailBody;
 
   try {
-    emailBody = await generateEmailBody(
-      invoice_id,
-      issueContext,
-      recoveryLink
-    );
+    emailBody = await generateEmailBody(invoice_id, issueContext, recoveryLink);
   } catch (err) {
 
     console.error("LLM failed. Using fallback template.");

@@ -1,20 +1,13 @@
-import { createClient } from "redis";
+import redis from "./redisClient.js";
 import pool from "./db.js";
 import dotenv from "dotenv";
 dotenv.config();
 
 import SupervisorAgent from "./agent/SupervisorAgent.js";
 import * as NotificationWorker from "./workers/NotificationWorker.js";
+import * as SelfHealWorker from "./workers/SelfHealWorker.js";
 import PolicyEngine from "./core/PolicyEngine.js";
 import { reflect } from "./core/ReflectionService.js";
-
-const redis = createClient({
-  url: "redis://127.0.0.1:6379"
-});
-
-redis.on("error", (err) => {
-  console.error("Redis Error:", err);
-});
 
 const STATE_TRANSITIONS = {
 
@@ -27,11 +20,13 @@ const STATE_TRANSITIONS = {
   VALIDATING: ["MATCHING", "WAITING_INFO", "BLOCKED", "EXCEPTION_REVIEW"],
 
   MATCHING: [
-    "COMPLIANCE",
+    "FRAUD_SCREENING",
     "WAITING_INFO",
     "EXCEPTION_REVIEW",
     "BLOCKED"
   ],
+
+  FRAUD_SCREENING: ["COMPLIANCE", "EXCEPTION_REVIEW", "BLOCKED"],
 
   COMPLIANCE: [
     "PAYMENT_READY",
@@ -251,6 +246,33 @@ async function processInvoice(invoice_id, organization_id) {
 
     if (decision.nextState === "WAITING_INFO") {
 
+      // Step 1 — attempt self-healing before bothering the vendor
+      const healResult = await SelfHealWorker.execute({
+        invoice_id,
+        organization_id
+      });
+
+      if (healResult.healed) {
+        // Auto-filled missing fields — reset to RECEIVED and re-process
+        console.log(`Self-healed fields: ${healResult.fields.join(", ")} for ${invoice_id}`);
+
+        await pool.query(
+          `
+          UPDATE invoice_state_machine
+          SET current_state = 'RECEIVED',
+              retry_count   = 0,
+              last_updated  = NOW()
+          WHERE invoice_id = $1
+          AND organization_id = $2
+          `,
+          [invoice_id, organization_id]
+        );
+
+        await redis.xAdd("invoice_events", "*", { invoice_id, organization_id });
+        return;
+      }
+
+      // Step 2 — couldn't self-heal, notify vendor
       await NotificationWorker.execute({
         invoice_id,
         organization_id,
@@ -260,17 +282,16 @@ async function processInvoice(invoice_id, organization_id) {
       return;
     }
 
-  if (
-    decision.nextState !== "BLOCKED" &&
-    decision.nextState !== "COMPLETED" &&
-    decision.nextState !== "EXCEPTION_REVIEW"
-  ) {
-    await redis.xAdd("invoice_events", "*", {
-      invoice_id,
-      organization_id
-    });
-  }
-
+    if (
+      decision.nextState !== "BLOCKED" &&
+      decision.nextState !== "COMPLETED" &&
+      decision.nextState !== "EXCEPTION_REVIEW"
+    ) {
+      await redis.xAdd("invoice_events", "*", {
+        invoice_id,
+        organization_id
+      });
+    }
 
   } catch (err) {
 
@@ -333,11 +354,12 @@ async function listen() {
   }
 }
 
-async function start() {
-
-  await redis.connect();
-  await listen();
-
+try {
+  await redis.xGroupCreate("invoice_events", "orchestrator_group", "0", {
+    MKSTREAM: true
+  });
+} catch (err) {
+  if (!err.message.includes("BUSYGROUP")) throw err;
 }
 
-start();
+await listen();

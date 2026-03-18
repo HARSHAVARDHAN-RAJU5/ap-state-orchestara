@@ -3,6 +3,8 @@ import { execute as ValidationWorker } from "../workers/ValidationWorker.js";
 import pool from "../db.js";
 import axios from "axios";
 
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
+
 export default class ValidationAgent extends BaseAgent {
 
   constructor(context) {
@@ -40,6 +42,13 @@ export default class ValidationAgent extends BaseAgent {
       };
     }
 
+    if (result.status === "MISSING_INFO") {
+      return {
+        nextState: "WAITING_INFO",
+        reason: result.reason || "Required fields missing in invoice"
+      };
+    }
+
     if (result.status === "BLOCKED") {
       return {
         nextState: "BLOCKED",
@@ -56,6 +65,16 @@ export default class ValidationAgent extends BaseAgent {
 
     if (result.status === "REVIEW_REQUIRED") {
 
+      // Tax unverified alone is not suspicious — no LLM needed
+      // route straight to EXCEPTION_REVIEW for a human to check
+      if (result.reason === "Tax ID could not be verified") {
+        return {
+          nextState: "EXCEPTION_REVIEW",
+          reason: "Tax ID unverified — requires manual check"
+        };
+      }
+
+      // Everything else (bank mismatch, ambiguous cases) — use LLM
       const context = await this.buildRiskContext(result.reason);
       const llmDecision = await this.callLLM(context);
 
@@ -88,22 +107,16 @@ export default class ValidationAgent extends BaseAgent {
   async buildRiskContext(reviewReason) {
 
     const extracted = await pool.query(
-      `
-      SELECT data
-      FROM invoice_extracted_data
-      WHERE invoice_id = $1
-      AND organization_id = $2
-      `,
+      `SELECT data
+       FROM invoice_extracted_data
+       WHERE invoice_id = $1 AND organization_id = $2`,
       [this.invoice_id, this.organization_id]
     );
 
     const validation = await pool.query(
-      `
-      SELECT *
-      FROM invoice_validation_results
-      WHERE invoice_id = $1
-      AND organization_id = $2
-      `,
+      `SELECT *
+       FROM invoice_validation_results
+       WHERE invoice_id = $1 AND organization_id = $2`,
       [this.invoice_id, this.organization_id]
     );
 
@@ -144,18 +157,18 @@ BLOCK
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:11434/api/generate",
+        `${OLLAMA_URL}/api/generate`,
         {
           model: "llama3",
           prompt,
           stream: false
-        }
+        },
+        { timeout: 30000 }
       );
 
       const output = response.data?.response?.trim()?.toUpperCase();
 
       if (!output) return "BLOCK";
-
       if (output.includes("PROCEED")) return "PROCEED";
       if (output.includes("WAIT")) return "WAIT";
 

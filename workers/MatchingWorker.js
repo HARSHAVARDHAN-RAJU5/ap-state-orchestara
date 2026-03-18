@@ -81,24 +81,24 @@ export async function execute(context) {
       [vendor_id, organization_id]
     );
 
-    const matches = poRes.rows.filter(p => {
-
-      const poAmount = toNumber(p.total_amount);
-
+  const matches = poRes.rows.filter(p => {
+    const poAmount = toNumber(p.total_amount);
       if (!poAmount) return false;
-
-      const variance =
-        Math.abs(invoiceTotal - poAmount) / poAmount;
-
+    // Only match open POs
+      if (p.status && !["OPEN", "PARTIAL"].includes(p.status)) return false;
+    const variance = Math.abs(invoiceTotal - poAmount) / poAmount;
       return variance <= tolerance;
-
     });
 
-    if (matches.length === 1) {
-      po = matches[0];
-    } else {
-      missing_po_flag = true;
-    }
+  if (matches.length >= 1) {
+    // Pick closest amount match instead of giving up on multiple
+    po = matches.sort((a, b) => {
+      return Math.abs(invoiceTotal - toNumber(a.total_amount))
+           - Math.abs(invoiceTotal - toNumber(b.total_amount));
+    })[0];
+  } else {
+    missing_po_flag = true;
+  }
   }
 
   if (po) {

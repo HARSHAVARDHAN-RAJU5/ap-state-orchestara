@@ -52,7 +52,7 @@ export default class MatchingAgent extends BaseAgent {
     }
 
     return {
-      nextState: "COMPLIANCE",
+      nextState: "FRAUD_SCREENING",
       reason: "PO matching successful"
     };
   }
