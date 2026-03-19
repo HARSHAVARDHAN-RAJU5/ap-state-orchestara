@@ -1,4 +1,5 @@
 import db from "../db.js";
+import { isAlreadyDone, markDone } from "../core/workerIdempotency.js";
 
 const BANK_ACCOUNT_ID = process.env.BANK_ACCOUNT_ID || 3001;
 
@@ -8,7 +9,10 @@ class AccountingWorker {
 
     const { invoice_id, organization_id } = context;
 
-    // 1. Ensure accrual is posted (atomic)
+    // Idempotency — if the full ACCOUNTING step already completed, skip
+    if (await isAlreadyDone(invoice_id, organization_id, "ACCOUNTING")) return { nextState: "COMPLETED", reason: "Invoice already processed" };
+
+    // 1. Ensure accrual is posted (has its own internal idempotency check)
     await AccountingWorker.postAccrual(context);
 
     // 2. Fetch payment schedule
@@ -37,7 +41,9 @@ class AccountingWorker {
       return { nextState: "ACCOUNTING", reason: "Waiting for payment due date" };
     }
 
-    // 3. Execute payment + clearance journal atomically
+    // 3. Execute payment + clearance journal + markDone — all atomic
+    // markDone is inside this transaction so a crash before COMMIT means
+    // the record is NOT written → retry will re-run safely
     const client = await db.connect();
     try {
       await client.query("BEGIN");
@@ -74,6 +80,9 @@ class AccountingWorker {
         ]
       );
 
+      // markDone inside the same transaction — atomically tied to the work above
+      await markDone(invoice_id, organization_id, "ACCOUNTING", client);
+
       await client.query("COMMIT");
     } catch (err) {
       await client.query("ROLLBACK");
@@ -89,7 +98,9 @@ class AccountingWorker {
 
     const { invoice_id, organization_id } = context;
 
-    // Check if already posted
+    // Internal idempotency — accrual has its own check separate from
+    // the main ACCOUNTING completion check because it can be posted
+    // before the payment clears
     const check = await db.query(
       `SELECT journal_id FROM journal_entries
        WHERE invoice_id = $1 AND organization_id = $2
@@ -110,36 +121,29 @@ class AccountingWorker {
     const amount = parseFloat(invoice.total_amount || 0);
     const category = invoice.expense_category || "GENERAL";
 
-    const mappingRes = await db.query(
+    let mappingRes = await db.query(
       `SELECT expense_account_id, ap_account_id
        FROM account_mapping
        WHERE organization_id = $1 AND expense_category = $2`,
       [organization_id, category]
     );
 
+    // GENERAL fallback before throwing
     if (!mappingRes.rows.length) {
-    // Try GENERAL as fallback before giving up
-    const fallbackRes = await db.query(
-      `SELECT expense_account_id, ap_account_id
-      FROM account_mapping
-      WHERE organization_id = $1 AND expense_category = 'GENERAL'`,
-      [organization_id]
-    );
+      mappingRes = await db.query(
+        `SELECT expense_account_id, ap_account_id
+         FROM account_mapping
+         WHERE organization_id = $1 AND expense_category = 'GENERAL'`,
+        [organization_id]
+      );
 
-    if (!fallbackRes.rows.length) {
-      return {
-        nextState: "EXCEPTION_REVIEW",
-        reason: `No account mapping found for category: ${category} and no GENERAL fallback`
-      };
+      if (!mappingRes.rows.length) {
+        throw new Error(`No account mapping for category: ${category} and no GENERAL fallback`);
+      }
     }
-    // Use GENERAL mapping
-    const { expense_account_id, ap_account_id } = fallbackRes.rows[0];
-    // continue with these...
-  }
 
     const { expense_account_id, ap_account_id } = mappingRes.rows[0];
 
-    // Atomic: journal header + both lines in one transaction
     const client = await db.connect();
     try {
       await client.query("BEGIN");
@@ -181,7 +185,6 @@ class AccountingWorker {
 
     const { invoice_id, organization_id } = context;
 
-    // Check if clearance already posted
     const check = await client.query(
       `SELECT journal_id FROM journal_entries
        WHERE invoice_id = $1 AND organization_id = $2
@@ -202,11 +205,19 @@ class AccountingWorker {
     const amount = parseFloat(invoice.total_amount || 0);
     const category = invoice.expense_category || "GENERAL";
 
-    const mappingRes = await client.query(
+    let mappingRes = await client.query(
       `SELECT ap_account_id FROM account_mapping
        WHERE organization_id = $1 AND expense_category = $2`,
       [organization_id, category]
     );
+
+    if (!mappingRes.rows.length) {
+      mappingRes = await client.query(
+        `SELECT ap_account_id FROM account_mapping
+         WHERE organization_id = $1 AND expense_category = 'GENERAL'`,
+        [organization_id]
+      );
+    }
 
     if (!mappingRes.rows.length) return;
 

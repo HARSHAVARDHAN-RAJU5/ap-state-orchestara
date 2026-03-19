@@ -5,9 +5,8 @@ dotenv.config();
 
 import SupervisorAgent from "./agent/SupervisorAgent.js";
 import * as NotificationWorker from "./workers/NotificationWorker.js";
-import * as SelfHealWorker from "./workers/SelfHealWorker.js";
 import PolicyEngine from "./core/PolicyEngine.js";
-import { reflect } from "./core/ReflectionService.js";
+import reflectionService from "./core/ReflectionService.js";
 
 const STATE_TRANSITIONS = {
 
@@ -57,20 +56,11 @@ const STATE_TRANSITIONS = {
   ]
 };
 
-async function logAudit(
-  invoice_id,
-  organization_id,
-  old_state,
-  new_state,
-  reason = null
-) {
-
+async function logAudit(invoice_id, organization_id, old_state, new_state, reason = null) {
   await pool.query(
-    `
-    INSERT INTO audit_event_log
-    (invoice_id, organization_id, old_state, new_state, reason)
-    VALUES ($1, $2, $3, $4, $5)
-    `,
+    `INSERT INTO audit_event_log
+     (invoice_id, organization_id, old_state, new_state, reason)
+     VALUES ($1, $2, $3, $4, $5)`,
     [invoice_id, organization_id, old_state, new_state, reason || null]
   );
 }
@@ -78,12 +68,10 @@ async function logAudit(
 async function processInvoice(invoice_id, organization_id) {
 
   const stateRes = await pool.query(
-    `
-    SELECT current_state, retry_count
-    FROM invoice_state_machine
-    WHERE invoice_id = $1
-    AND organization_id = $2
-    `,
+    `SELECT current_state, retry_count
+     FROM invoice_state_machine
+     WHERE invoice_id = $1
+     AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -115,45 +103,6 @@ async function processInvoice(invoice_id, organization_id) {
       config
     };
 
-    const reflection = await reflect(context, current_state);
-
-    if (reflection?.overrideState) {
-
-      const allowed = STATE_TRANSITIONS[current_state] || [];
-
-      if (allowed.includes(reflection.overrideState)) {
-
-        await pool.query(
-          `
-          UPDATE invoice_state_machine
-          SET current_state = $1,
-              retry_count = 0,
-              last_updated = NOW()
-          WHERE invoice_id = $2
-          AND organization_id = $3
-          `,
-          [reflection.overrideState, invoice_id, organization_id]
-        );
-
-        await logAudit(
-          invoice_id,
-          organization_id,
-          current_state,
-          reflection.overrideState,
-          reflection.reason || "Reflection override"
-        );
-
-        console.log("Reflection override to:", reflection.overrideState);
-
-        await redis.xAdd("invoice_events", "*", {
-          invoice_id,
-          organization_id
-        });
-
-        return;
-      }
-    }
-
     const supervisor = new SupervisorAgent(context);
     const result = await supervisor.executeStep();
 
@@ -164,44 +113,33 @@ async function processInvoice(invoice_id, organization_id) {
 
     const decision = result.decision;
 
+    // ── Retry path ─────────────────────────────────────────────────────────────
     if (decision.retry === true) {
 
-      const maxRetry =
-        context.config?.payment?.max_retry_count ?? 2;
+      const maxRetry = context.config?.payment?.max_retry_count ?? 2;
 
       if (retry_count >= maxRetry) {
 
         await pool.query(
-          `
-          UPDATE invoice_state_machine
-          SET current_state = 'BLOCKED',
-              last_updated = NOW()
-          WHERE invoice_id = $1
-          AND organization_id = $2
-          `,
+          `UPDATE invoice_state_machine
+           SET current_state = 'BLOCKED',
+               last_updated = NOW()
+           WHERE invoice_id = $1
+           AND organization_id = $2`,
           [invoice_id, organization_id]
         );
 
-        await logAudit(
-          invoice_id,
-          organization_id,
-          current_state,
-          "BLOCKED",
-          "RETRY_LIMIT_EXCEEDED"
-        );
-
+        await logAudit(invoice_id, organization_id, current_state, "BLOCKED", "RETRY_LIMIT_EXCEEDED");
         console.log("Retry limit exceeded. Blocked.");
         return;
       }
 
       await pool.query(
-        `
-        UPDATE invoice_state_machine
-        SET retry_count = retry_count + 1,
-            last_updated = NOW()
-        WHERE invoice_id = $1
-        AND organization_id = $2
-        `,
+        `UPDATE invoice_state_machine
+         SET retry_count = retry_count + 1,
+             last_updated = NOW()
+         WHERE invoice_id = $1
+         AND organization_id = $2`,
         [invoice_id, organization_id]
       );
 
@@ -214,6 +152,7 @@ async function processInvoice(invoice_id, organization_id) {
       return;
     }
 
+    // ── State transition guard ─────────────────────────────────────────────────
     const allowed = STATE_TRANSITIONS[current_state] || [];
 
     if (!allowed.includes(decision.nextState)) {
@@ -223,56 +162,22 @@ async function processInvoice(invoice_id, organization_id) {
     }
 
     await pool.query(
-      `
-      UPDATE invoice_state_machine
-      SET current_state = $1,
-          retry_count = 0,
-          last_updated = NOW()
-      WHERE invoice_id = $2
-      AND organization_id = $3
-      `,
+      `UPDATE invoice_state_machine
+       SET current_state = $1,
+           retry_count = 0,
+           last_updated = NOW()
+       WHERE invoice_id = $2
+       AND organization_id = $3`,
       [decision.nextState, invoice_id, organization_id]
     );
 
-    await logAudit(
-      invoice_id,
-      organization_id,
-      current_state,
-      decision.nextState,
-      decision.reason || null
-    );
+    await logAudit(invoice_id, organization_id, current_state, decision.nextState, decision.reason || null);
 
     console.log("Moved to:", decision.nextState);
 
+    // ── WAITING_INFO: notify vendor to resubmit ───────────────────────────────
     if (decision.nextState === "WAITING_INFO") {
 
-      // Step 1 — attempt self-healing before bothering the vendor
-      const healResult = await SelfHealWorker.execute({
-        invoice_id,
-        organization_id
-      });
-
-      if (healResult.healed) {
-        // Auto-filled missing fields — reset to RECEIVED and re-process
-        console.log(`Self-healed fields: ${healResult.fields.join(", ")} for ${invoice_id}`);
-
-        await pool.query(
-          `
-          UPDATE invoice_state_machine
-          SET current_state = 'RECEIVED',
-              retry_count   = 0,
-              last_updated  = NOW()
-          WHERE invoice_id = $1
-          AND organization_id = $2
-          `,
-          [invoice_id, organization_id]
-        );
-
-        await redis.xAdd("invoice_events", "*", { invoice_id, organization_id });
-        return;
-      }
-
-      // Step 2 — couldn't self-heal, notify vendor
       await NotificationWorker.execute({
         invoice_id,
         organization_id,
@@ -282,31 +187,38 @@ async function processInvoice(invoice_id, organization_id) {
       return;
     }
 
+    // ── Re-emit for all non-terminal states ────────────────────────────────────
     if (
       decision.nextState !== "BLOCKED" &&
       decision.nextState !== "COMPLETED" &&
       decision.nextState !== "EXCEPTION_REVIEW"
     ) {
-      await redis.xAdd("invoice_events", "*", {
-        invoice_id,
-        organization_id
-      });
+      await redis.xAdd("invoice_events", "*", { invoice_id, organization_id });
     }
 
   } catch (err) {
 
-    console.error("Supervisor failure:", err.message);
+    console.error(`Supervisor failure [${invoice_id}]:`, err.message);
 
     await pool.query(
-      `
-      UPDATE invoice_state_machine
-      SET retry_count = retry_count + 1,
-          last_updated = NOW()
-      WHERE invoice_id = $1
-      AND organization_id = $2
-      `,
+      `UPDATE invoice_state_machine
+       SET retry_count = retry_count + 1,
+           last_updated = NOW()
+       WHERE invoice_id = $1
+       AND organization_id = $2`,
       [invoice_id, organization_id]
     );
+  }
+}
+
+// Runs on every loop tick — finds invoices stuck in the same state
+// with repeated failures and trips the circuit breaker → EXCEPTION_REVIEW
+async function runReflectionCycle() {
+  try {
+    await reflectionService.reflect();
+  } catch (err) {
+    // Non-fatal — never let this kill the orchestrator loop
+    console.error("ReflectionService error:", err.message);
   }
 }
 
@@ -321,14 +233,8 @@ async function listen() {
       const response = await redis.xReadGroup(
         "orchestrator_group",
         "orchestrator_1",
-        {
-          key: "invoice_events",
-          id: ">"
-        },
-        {
-          COUNT: 1,
-          BLOCK: 5000
-        }
+        { key: "invoice_events", id: ">" },
+        { COUNT: 1, BLOCK: 5000 }
       );
 
       if (!response) continue;
@@ -340,16 +246,14 @@ async function listen() {
 
       await processInvoice(invoice_id, organization_id);
 
-      await redis.xAck(
-        "invoice_events",
-        "orchestrator_group",
-        message.id
-      );
+      await redis.xAck("invoice_events", "orchestrator_group", message.id);
+
+      // ReflectionService runs every loop tick regardless of whether
+      // there was an event — catches stuck invoices even during quiet periods
+      await runReflectionCycle();
 
     } catch (error) {
-
       console.error("Listener Error:", error);
-
     }
   }
 }

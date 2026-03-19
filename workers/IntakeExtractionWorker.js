@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import axios from "axios";
 import pool from "../db.js";
 import pdfjs from "pdfjs-dist/legacy/build/pdf.js";
+import { isAlreadyDone, markDone } from "../core/workerIdempotency.js";
 
 const { getDocument } = pdfjs;
 
@@ -30,7 +31,6 @@ async function callLLMWithRetry(prompt) {
       return response.data.response;
     } catch (err) {
       if (attempt === LLM_RETRIES) throw err;
-      console.warn(`LLM attempt ${attempt} failed, retrying in ${LLM_RETRY_DELAY_MS}ms...`);
       await new Promise(r => setTimeout(r, LLM_RETRY_DELAY_MS * attempt));
     }
   }
@@ -51,6 +51,10 @@ export async function execute(context) {
 
   if (!invoice_id || !organization_id) {
     throw new Error("ExtractionWorker requires invoice_id and organization_id");
+  }
+
+  if (await isAlreadyDone(invoice_id, organization_id, "RECEIVED")) {
+    return { success: true, outcome: "AI_EXTRACTION_SUCCESS" };
   }
 
   const stateCheck = await pool.query(
@@ -149,14 +153,12 @@ ${text}
     return { success: false, failure_type: "AI_PARSE_ERROR" };
   }
 
-  // Sanitize numeric fields
   for (const field of ["total_amount", "subtotal", "tax"]) {
     if (structured[field] !== null && structured[field] !== undefined) {
       structured[field] = Number(String(structured[field]).replace(/[^0-9.]/g, ""));
     }
   }
 
-  // Subtotal+tax fallback BEFORE the null guard
   if (!structured.total_amount && structured.subtotal && structured.tax) {
     structured.total_amount = structured.subtotal + structured.tax;
   }
@@ -173,8 +175,6 @@ ${text}
     structured.expense_category = "GENERAL";
   }
 
-  // Normalize string fields — fixes LLM inconsistency downstream
-  // "Acme Corp." / "ACME CORP" / "acme corp" all become "ACME CORP"
   structured.vendor_name    = normalizeString(structured.vendor_name);
   structured.invoice_number = normalizeString(structured.invoice_number);
   structured.gstin          = structured.gstin
@@ -192,6 +192,8 @@ ${text}
        extracted_at = NOW()`,
     [invoice_id, organization_id, structured]
   );
+
+  await markDone(invoice_id, organization_id, "RECEIVED");
 
   return { success: true, outcome: "AI_EXTRACTION_SUCCESS" };
 }

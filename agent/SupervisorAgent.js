@@ -1,4 +1,5 @@
 import pool from "../db.js";
+import { ReflectionService } from "../core/ReflectionService.js";
 
 import IntakeExtractionAgent from "./IntakeExtractionAgent.js";
 import DuplicateAgent from "./DuplicateAgent.js";
@@ -94,7 +95,31 @@ export default class SupervisorAgent {
   async executeStep() {
 
     const state = await this.getCurrentState();
+
+    // Before dispatching to the agent, load any prior failure context
+    // for this invoice. Agents can read this.context.failureContext in their
+    // plan() step to adjust their reasoning. Groundwork for LangGraph memory.
+    let failureContext = [];
+    try {
+      failureContext = await ReflectionService.getFailureContext(
+        this.invoice_id,
+        this.organization_id
+      );
+    } catch {
+      // Non-fatal — if this fails we still process the invoice normally
+    }
+
+    const enrichedContext = {
+      ...this.context,
+      failureContext
+    };
+
     const agent = this.selectAgent(state);
+
+    // Pass enriched context to agents that accept it
+    if (agent.context !== undefined) {
+      agent.context = enrichedContext;
+    }
 
     if (!agent || typeof agent.run !== "function") {
       throw new Error("Invalid agent instance");

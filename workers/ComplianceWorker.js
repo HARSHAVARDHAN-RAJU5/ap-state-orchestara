@@ -1,9 +1,22 @@
 import pool from "../db.js";
 import { evaluateTax } from "../core/taxEngineCompliance.js";
+import { isAlreadyDone, markDone } from "../core/workerIdempotency.js";
 
 export async function execute(context) {
 
   const { invoice_id, organization_id, config } = context;
+
+  if (await isAlreadyDone(invoice_id, organization_id, "COMPLIANCE")) {
+    const cached = await pool.query(
+      `SELECT tax_status, high_value_flag
+       FROM invoice_compliance_results
+       WHERE invoice_id = $1 AND organization_id = $2`,
+      [invoice_id, organization_id]
+    );
+    if (cached.rows.length) {
+      return { success: true, signals: cached.rows[0] };
+    }
+  }
 
   const invoiceRes = await pool.query(
     `SELECT data
@@ -18,14 +31,12 @@ export async function execute(context) {
 
   const invoice = invoiceRes.rows[0].data;
 
-  // Pass organization_id — fixes cross-tenant tax leak
   const taxResult = await evaluateTax(invoice, organization_id);
 
   const total = parseFloat(invoice.total_amount || invoice.total || 0);
   const highValueThreshold = config?.approval?.high_value_threshold ?? Infinity;
   const high_value_flag = total > highValueThreshold;
 
-  // Write compliance results (was missing before)
   await pool.query(
     `INSERT INTO invoice_compliance_results
        (invoice_id, organization_id, tax_status, high_value_flag, evaluated_at)
@@ -37,6 +48,8 @@ export async function execute(context) {
        evaluated_at = NOW()`,
     [invoice_id, organization_id, taxResult.status, high_value_flag]
   );
+
+  await markDone(invoice_id, organization_id, "COMPLIANCE");
 
   return {
     success: true,

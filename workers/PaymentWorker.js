@@ -1,4 +1,5 @@
 import pool from "../db.js";
+import { isAlreadyDone, markDone } from "../core/workerIdempotency.js";
 
 function calculateDueDate(days) {
   const date = new Date();
@@ -14,13 +15,15 @@ export async function execute(context) {
     return { success: false, reason: "Missing invoice context" };
   }
 
+  if (await isAlreadyDone(invoice_id, organization_id, "PAYMENT_READY")) {
+    return { success: true, nextState: "PENDING_APPROVAL" };
+  }
+
   const stateRes = await pool.query(
-    `
-    SELECT current_state
-    FROM invoice_state_machine
-    WHERE invoice_id = $1
-      AND organization_id = $2
-    `,
+    `SELECT current_state
+     FROM invoice_state_machine
+     WHERE invoice_id = $1
+       AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -33,12 +36,10 @@ export async function execute(context) {
   }
 
   const invoiceRes = await pool.query(
-    `
-    SELECT data
-    FROM invoice_extracted_data
-    WHERE invoice_id = $1
-      AND organization_id = $2
-    `,
+    `SELECT data
+     FROM invoice_extracted_data
+     WHERE invoice_id = $1
+       AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -65,8 +66,7 @@ export async function execute(context) {
     "BANK_TRANSFER";
 
   await pool.query(
-    `
-    INSERT INTO invoice_payment_schedule
+    `INSERT INTO invoice_payment_schedule
       (invoice_id, organization_id,
        payment_status, payment_due_date,
        payment_method, scheduled_at)
@@ -75,19 +75,11 @@ export async function execute(context) {
     DO UPDATE SET
       payment_status = EXCLUDED.payment_status,
       payment_due_date = EXCLUDED.payment_due_date,
-      payment_method = EXCLUDED.payment_method
-    `,
-    [
-      invoice_id,
-      organization_id,
-      "SCHEDULED",
-      dueDate,
-      paymentMethod
-    ]
+      payment_method = EXCLUDED.payment_method`,
+    [invoice_id, organization_id, "SCHEDULED", dueDate, paymentMethod]
   );
 
-  return {
-    success: true,
-    nextState: "PENDING_APPROVAL"
-  };
+  await markDone(invoice_id, organization_id, "PAYMENT_READY");
+
+  return { success: true, nextState: "PENDING_APPROVAL" };
 }

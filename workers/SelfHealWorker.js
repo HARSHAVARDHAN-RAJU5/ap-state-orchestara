@@ -1,26 +1,15 @@
 import pool from "../db.js";
 
-/**
- * Attempts to auto-fill missing invoice fields from internal data.
- * Called before NotificationWorker — if healing succeeds, invoice
- * goes back to RECEIVED for a fresh pipeline run instead of waiting for vendor.
- *
- * Returns:
- *   { healed: true,  fields: [...] }  → re-emit invoice, skip vendor email
- *   { healed: false, reason: "..." }  → fall through to NotificationWorker
- */
 export async function execute(context) {
 
   const { invoice_id, organization_id } = context;
 
-  // Load current extracted data
   const invoiceRes = await pool.query(
     `SELECT data FROM invoice_extracted_data
      WHERE invoice_id = $1 AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
-  // No extracted data at all — can't self-heal, vendor needs to resubmit
   if (!invoiceRes.rows.length) {
     return { healed: false, reason: "No extracted data to heal" };
   }
@@ -28,8 +17,6 @@ export async function execute(context) {
   const data = { ...invoiceRes.rows[0].data };
   const healedFields = [];
 
-  // ── HEAL 1: Missing po_number ──────────────────────────────────
-  // Try to find a matching PO by vendor + amount
   if (!data.po_number && data.vendor_name && data.total_amount) {
 
     const poRes = await pool.query(
@@ -73,8 +60,6 @@ export async function execute(context) {
     }
   }
 
-  // ── HEAL 3: Missing vendor_name ────────────────────────────────
-  // Look up from vendor_master by gstin/tax_id
   if (!data.vendor_name && data.gstin) {
 
     const vendorRes = await pool.query(

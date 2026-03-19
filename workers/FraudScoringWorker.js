@@ -1,13 +1,31 @@
 import pool from "../db.js";
+import { isAlreadyDone, markDone } from "../core/workerIdempotency.js";
 
-// Risk score thresholds
-const SCORE_AUTO_PASS  = 30;  // below this → pass to COMPLIANCE
-const SCORE_REVIEW     = 60;  // between 30-60 → EXCEPTION_REVIEW
-                               // above 60 → BLOCKED
+const SCORE_AUTO_PASS = 30;
+const SCORE_REVIEW    = 60;
 
 export async function execute(context) {
 
   const { invoice_id, organization_id } = context;
+
+  if (await isAlreadyDone(invoice_id, organization_id, "FRAUD_SCREENING")) {
+    const cached = await pool.query(
+      `SELECT risk_score, signals
+       FROM invoice_fraud_scores
+       WHERE invoice_id = $1 AND organization_id = $2`,
+      [invoice_id, organization_id]
+    );
+    if (cached.rows.length) {
+      const { risk_score, signals } = cached.rows[0];
+      const score = parseInt(risk_score, 10);
+      return {
+        success: true,
+        risk_score: score,
+        signals: signals,
+        outcome: score < SCORE_AUTO_PASS ? "PASS" : score < SCORE_REVIEW ? "REVIEW" : "BLOCK"
+      };
+    }
+  }
 
   const invoiceRes = await pool.query(
     `SELECT data FROM invoice_extracted_data
@@ -26,14 +44,13 @@ export async function execute(context) {
   const signals = [];
   let score = 0;
 
-  // ── SIGNAL 1: Round number amount ──────────────────────────────
-  // e.g. exactly 50000, 100000 — common in fabricated invoices
+  // SIGNAL 1: Round number amount
   if (total > 0 && total % 1000 === 0) {
     score += 15;
     signals.push({ signal: "ROUND_AMOUNT", score: 15, value: total });
   }
 
-  // ── SIGNAL 2: First ever invoice from this vendor ──────────────
+  // SIGNAL 2: First ever invoice from this vendor
   const vendorHistoryRes = await pool.query(
     `SELECT COUNT(*) as count
      FROM invoice_extracted_data
@@ -49,7 +66,7 @@ export async function execute(context) {
     signals.push({ signal: "FIRST_TIME_VENDOR", score: 20, value: vendor });
   }
 
-  // ── SIGNAL 3: Same vendor multiple invoices in last 24 hours ───
+  // SIGNAL 3: Same vendor multiple invoices in last 24 hours
   const rapidSubmissionRes = await pool.query(
     `SELECT COUNT(*) as count
      FROM invoices i
@@ -69,7 +86,7 @@ export async function execute(context) {
     signals.push({ signal: "RAPID_RESUBMISSION", score: 25, value: rapidCount });
   }
 
-  // ── SIGNAL 4: Invoice date backdated more than 30 days ─────────
+  // SIGNAL 4: Invoice date backdated more than 30 days
   if (invoice.invoice_date) {
     const invoiceDate = new Date(invoice.invoice_date);
     const today       = new Date();
@@ -81,7 +98,7 @@ export async function execute(context) {
     }
   }
 
-  // ── SIGNAL 5: Amount significantly above vendor historical avg ──
+  // SIGNAL 5: Amount significantly above vendor historical avg
   if (vendorInvoiceCount > 0) {
     const avgRes = await pool.query(
       `SELECT AVG((data->>'total_amount')::numeric) as avg_amount
@@ -99,7 +116,7 @@ export async function execute(context) {
     }
   }
 
-  // ── SIGNAL 6: PO number reused across multiple invoices ─────────
+  // SIGNAL 6: PO number reused across multiple invoices
   if (invoice.po_number) {
     const poReuseRes = await pool.query(
       `SELECT COUNT(*) as count
@@ -117,7 +134,6 @@ export async function execute(context) {
     }
   }
 
-  // ── Write results ───────────────────────────────────────────────
   await pool.query(
     `INSERT INTO invoice_fraud_scores
        (invoice_id, organization_id, risk_score, signals, evaluated_at)
@@ -130,15 +146,12 @@ export async function execute(context) {
     [invoice_id, organization_id, score, JSON.stringify(signals)]
   );
 
-  // ── Route decision ──────────────────────────────────────────────
+  await markDone(invoice_id, organization_id, "FRAUD_SCREENING");
+
   let outcome;
-  if (score < SCORE_AUTO_PASS) {
-    outcome = "PASS";
-  } else if (score < SCORE_REVIEW) {
-    outcome = "REVIEW";
-  } else {
-    outcome = "BLOCK";
-  }
+  if (score < SCORE_AUTO_PASS)  outcome = "PASS";
+  else if (score < SCORE_REVIEW) outcome = "REVIEW";
+  else                           outcome = "BLOCK";
 
   return {
     success: true,
