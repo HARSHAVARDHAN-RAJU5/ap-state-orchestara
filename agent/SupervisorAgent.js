@@ -8,9 +8,9 @@ import MatchingAgent from "./MatchingAgent.js";
 import FraudScoringAgent from "./FraudScoringAgent.js";
 import ComplianceAgent from "./ComplianceAgent.js";
 import PaymentAgent from "./PaymentAgent.js";
+import PendingApprovalAgent from "./PendingApprovalAgent.js";
 import ExceptionReviewAgent from "./ExceptionReviewAgent.js";
 import AccountingAgent from "./AccountingAgent.js";
-import ApprovalAgent from "./ApprovalAgent.js";
 
 export default class SupervisorAgent {
 
@@ -70,9 +70,14 @@ export default class SupervisorAgent {
       case "PAYMENT_READY":
         return new PaymentAgent(this.context);
 
+      // PENDING_APPROVAL — real human wait state.
+      // Human approves payment via /api/approvals/:invoice_id/decision
+      // PendingApprovalAgent checks for a decision and routes accordingly.
       case "PENDING_APPROVAL":
-        return new ApprovalAgent(this.context);
+        return new PendingApprovalAgent(this.context);
 
+      // EXCEPTION_REVIEW — escalation handling only.
+      // Routes back to PAYMENT_READY on resolve, never directly to APPROVED.
       case "EXCEPTION_REVIEW":
         return new ExceptionReviewAgent(this.context);
 
@@ -96,9 +101,6 @@ export default class SupervisorAgent {
 
     const state = await this.getCurrentState();
 
-    // Before dispatching to the agent, load any prior failure context
-    // for this invoice. Agents can read this.context.failureContext in their
-    // plan() step to adjust their reasoning. Groundwork for LangGraph memory.
     let failureContext = [];
     try {
       failureContext = await ReflectionService.getFailureContext(
@@ -106,7 +108,7 @@ export default class SupervisorAgent {
         this.organization_id
       );
     } catch {
-      // Non-fatal — if this fails we still process the invoice normally
+      // Non-fatal
     }
 
     const enrichedContext = {
@@ -116,7 +118,6 @@ export default class SupervisorAgent {
 
     const agent = this.selectAgent(state);
 
-    // Pass enriched context to agents that accept it
     if (agent.context !== undefined) {
       agent.context = enrichedContext;
     }

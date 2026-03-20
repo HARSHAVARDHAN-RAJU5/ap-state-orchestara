@@ -70,7 +70,7 @@ class AccountingWorker {
         `INSERT INTO paid_invoice_registry
            (invoice_id, organization_id, invoice_number, vendor_name, total_amount, paid_at)
          VALUES ($1, $2, $3, $4, $5, NOW())
-         ON CONFLICT (invoice_id, organization_id) DO NOTHING`,
+         ON CONFLICT (organization_id, invoice_number, vendor_name) DO NOTHING`,
         [
           invoice_id,
           organization_id,
