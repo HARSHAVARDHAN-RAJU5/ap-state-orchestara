@@ -159,11 +159,11 @@ BLOCK
       const response = await axios.post(
         `${OLLAMA_URL}/api/generate`,
         {
-          model: "llama3",
+          model: "llama3.2:1b",
           prompt,
           stream: false
         },
-        { timeout: 30000 }
+        { timeout: 90000 }
       );
 
       const output = response.data?.response?.trim()?.toUpperCase();

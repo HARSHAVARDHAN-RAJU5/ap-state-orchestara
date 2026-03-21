@@ -25,7 +25,7 @@ async function callLLMWithRetry(prompt) {
     try {
       const response = await axios.post(
         `${OLLAMA_URL}/api/generate`,
-        { model: "llama3", prompt, stream: false },
+        { model: "llama3.2:1b", prompt, stream: false },
         { timeout: 30000 }
       );
       return response.data.response;
