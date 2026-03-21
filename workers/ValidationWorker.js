@@ -1,4 +1,5 @@
 import pool from "../db.js";
+import { isAlreadyDone, markDone } from "../core/workerIdempotency.js";
 
 function toNumber(value) {
   const num = parseFloat(value);
@@ -13,7 +14,28 @@ export async function execute(context) {
     throw new Error("ValidationWorker requires invoice_id and organization_id");
   }
 
-  // verify state
+  if (await isAlreadyDone(invoice_id, organization_id, "VALIDATING")) {
+    // Re-read the result that was written last time so the agent can evaluate it
+    const cached = await pool.query(
+      `SELECT overall_status, bank_status, tax_status
+       FROM invoice_validation_results
+       WHERE invoice_id = $1 AND organization_id = $2`,
+      [invoice_id, organization_id]
+    );
+    if (cached.rows.length) {
+      const { overall_status, bank_status, tax_status } = cached.rows[0];
+      return {
+        success: true,
+        status: overall_status,
+        reason: bank_status === "MISMATCH"
+          ? "Vendor bank account mismatch detected"
+          : tax_status === "UNVERIFIED"
+          ? "Tax ID could not be verified"
+          : "Vendor validated successfully"
+      };
+    }
+  }
+
   const stateCheck = await pool.query(
     `SELECT current_state
      FROM invoice_state_machine
@@ -30,7 +52,6 @@ export async function execute(context) {
     throw new Error("ValidationWorker executed in wrong state");
   }
 
-  // load extracted invoice data
   const invoiceRes = await pool.query(
     `SELECT data
      FROM invoice_extracted_data
@@ -40,10 +61,7 @@ export async function execute(context) {
   );
 
   if (!invoiceRes.rows.length) {
-    return {
-      success: false,
-      reason: "Extracted invoice data not found"
-    };
+    return { success: false, reason: "Extracted invoice data not found" };
   }
 
   const invoice = invoiceRes.rows[0].data || {};
@@ -96,11 +114,9 @@ export async function execute(context) {
 
   const vendor = vendorRes.rows[0];
 
-  // check vendor is active
   const legal_status = vendor.status === "ACTIVE" ? "PASS" : "FAIL";
 
   // --- BANK CHECK ---
-  // check if invoice has a bank account field and if it matches vendor master
   const invoiceBankAccount = invoice.bank_account || null;
   let bank_status = "PASS";
 
@@ -124,7 +140,6 @@ export async function execute(context) {
     overall_status = "REVIEW_REQUIRED";
   }
 
-  // write to invoice_validation_results
   await pool.query(
     `INSERT INTO invoice_validation_results
       (invoice_id, organization_id, vendor_id,
@@ -150,7 +165,8 @@ export async function execute(context) {
     ]
   );
 
-  // return status for ValidationAgent to evaluate
+  await markDone(invoice_id, organization_id, "VALIDATING");
+
   if (overall_status === "BLOCKED") {
     return {
       success: true,

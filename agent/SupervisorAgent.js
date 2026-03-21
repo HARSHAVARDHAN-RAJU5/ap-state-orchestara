@@ -1,14 +1,16 @@
 import pool from "../db.js";
+import { ReflectionService } from "../core/ReflectionService.js";
 
 import IntakeExtractionAgent from "./IntakeExtractionAgent.js";
 import DuplicateAgent from "./DuplicateAgent.js";
 import ValidationAgent from "./ValidationAgent.js";
 import MatchingAgent from "./MatchingAgent.js";
+import FraudScoringAgent from "./FraudScoringAgent.js";
 import ComplianceAgent from "./ComplianceAgent.js";
 import PaymentAgent from "./PaymentAgent.js";
+import PendingApprovalAgent from "./PendingApprovalAgent.js";
 import ExceptionReviewAgent from "./ExceptionReviewAgent.js";
 import AccountingAgent from "./AccountingAgent.js";
-import ApprovalAgent from "./ApprovalAgent.js";
 
 export default class SupervisorAgent {
 
@@ -22,12 +24,9 @@ export default class SupervisorAgent {
   async getCurrentState() {
 
     const res = await pool.query(
-      `
-      SELECT current_state
-      FROM invoice_state_machine
-      WHERE invoice_id = $1
-      AND organization_id = $2
-      `,
+      `SELECT current_state
+       FROM invoice_state_machine
+       WHERE invoice_id = $1 AND organization_id = $2`,
       [this.invoice_id, this.organization_id]
     );
 
@@ -56,14 +55,14 @@ export default class SupervisorAgent {
       case "DUPLICATE_CHECK":
         return new DuplicateAgent(this.context);
 
-      case "PENDING_APPROVAL":
-        return new ApprovalAgent(this.context);
-
       case "VALIDATING":
         return new ValidationAgent(this.context);
 
       case "MATCHING":
         return new MatchingAgent(this.context);
+
+      case "FRAUD_SCREENING":
+        return new FraudScoringAgent(this.context);
 
       case "COMPLIANCE":
         return new ComplianceAgent(this.context);
@@ -71,11 +70,16 @@ export default class SupervisorAgent {
       case "PAYMENT_READY":
         return new PaymentAgent(this.context);
 
+      // PENDING_APPROVAL — real human wait state.
+      // Human approves payment via /api/approvals/:invoice_id/decision
+      // PendingApprovalAgent checks for a decision and routes accordingly.
+      case "PENDING_APPROVAL":
+        return new PendingApprovalAgent(this.context);
+
+      // EXCEPTION_REVIEW — escalation handling only.
+      // Routes back to PAYMENT_READY on resolve, never directly to APPROVED.
       case "EXCEPTION_REVIEW":
         return new ExceptionReviewAgent(this.context);
-
-      case "ACCOUNTING":
-        return new AccountingAgent(this.context);
 
       case "APPROVED":
         return {
@@ -84,6 +88,9 @@ export default class SupervisorAgent {
             reason: "Invoice approved, moving to accounting"
           })
         };
+
+      case "ACCOUNTING":
+        return new AccountingAgent(this.context);
 
       default:
         throw new Error(`No agent mapped for state: ${state}`);
@@ -94,7 +101,26 @@ export default class SupervisorAgent {
 
     const state = await this.getCurrentState();
 
+    let failureContext = [];
+    try {
+      failureContext = await ReflectionService.getFailureContext(
+        this.invoice_id,
+        this.organization_id
+      );
+    } catch {
+      // Non-fatal
+    }
+
+    const enrichedContext = {
+      ...this.context,
+      failureContext
+    };
+
     const agent = this.selectAgent(state);
+
+    if (agent.context !== undefined) {
+      agent.context = enrichedContext;
+    }
 
     if (!agent || typeof agent.run !== "function") {
       throw new Error("Invalid agent instance");

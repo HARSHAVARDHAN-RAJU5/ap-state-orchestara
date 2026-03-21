@@ -1,4 +1,5 @@
 import pool from "../db.js";
+import { isAlreadyDone, markDone } from "../core/workerIdempotency.js";
 
 function toNumber(value) {
   const num = parseFloat(value);
@@ -9,13 +10,23 @@ export async function execute(context) {
 
   const { invoice_id, organization_id, config } = context;
 
+  if (await isAlreadyDone(invoice_id, organization_id, "MATCHING")) {
+    const cached = await pool.query(
+      `SELECT missing_po_flag, price_variance_flag, bank_mismatch_flag
+       FROM invoice_po_matching_results
+       WHERE invoice_id = $1 AND organization_id = $2`,
+      [invoice_id, organization_id]
+    );
+    if (cached.rows.length) {
+      return { success: true, signals: cached.rows[0] };
+    }
+  }
+
   const invoiceRes = await pool.query(
-    `
-    SELECT data
-    FROM invoice_extracted_data
-    WHERE invoice_id = $1
-    AND organization_id = $2
-    `,
+    `SELECT data
+     FROM invoice_extracted_data
+     WHERE invoice_id = $1
+     AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -29,12 +40,10 @@ export async function execute(context) {
   const poNumber = invoice.po_number || null;
 
   const validationRes = await pool.query(
-    `
-    SELECT vendor_id, bank_status
-    FROM invoice_validation_results
-    WHERE invoice_id = $1
-    AND organization_id = $2
-    `,
+    `SELECT vendor_id, bank_status
+     FROM invoice_validation_results
+     WHERE invoice_id = $1
+     AND organization_id = $2`,
     [invoice_id, organization_id]
   );
 
@@ -44,8 +53,7 @@ export async function execute(context) {
 
   const { vendor_id, bank_status } = validationRes.rows[0];
 
-  const tolerance =
-    config?.matching?.price_variance_percentage ?? 0.02;
+  const tolerance = config?.matching?.price_variance_percentage ?? 0.02;
 
   let po = null;
   let missing_po_flag = false;
@@ -53,14 +61,10 @@ export async function execute(context) {
   const bank_mismatch_flag = bank_status === "MISMATCH";
 
   if (poNumber) {
-
     const poRes = await pool.query(
-      `
-      SELECT *
-      FROM purchase_orders
-      WHERE po_number = $1
-      AND organization_id = $2
-      `,
+      `SELECT * FROM purchase_orders
+       WHERE po_number = $1
+       AND organization_id = $2`,
       [poNumber, organization_id]
     );
 
@@ -70,66 +74,54 @@ export async function execute(context) {
   }
 
   if (!po) {
-
     const poRes = await pool.query(
-      `
-      SELECT *
-      FROM purchase_orders
-      WHERE vendor_id = $1
-      AND organization_id = $2
-      `,
+      `SELECT * FROM purchase_orders
+       WHERE vendor_id = $1
+       AND organization_id = $2`,
       [vendor_id, organization_id]
     );
 
     const matches = poRes.rows.filter(p => {
-
       const poAmount = toNumber(p.total_amount);
-
       if (!poAmount) return false;
-
-      const variance =
-        Math.abs(invoiceTotal - poAmount) / poAmount;
-
+      if (p.status && !["OPEN", "PARTIAL"].includes(p.status)) return false;
+      const variance = Math.abs(invoiceTotal - poAmount) / poAmount;
       return variance <= tolerance;
-
     });
 
-    if (matches.length === 1) {
-      po = matches[0];
+    if (matches.length >= 1) {
+      po = matches.sort((a, b) =>
+        Math.abs(invoiceTotal - toNumber(a.total_amount)) -
+        Math.abs(invoiceTotal - toNumber(b.total_amount))
+      )[0];
     } else {
       missing_po_flag = true;
     }
   }
 
   if (po) {
-
     const poAmount = toNumber(po.total_amount);
-
-    const variance =
-      Math.abs(invoiceTotal - poAmount) / poAmount;
-
+    const variance = Math.abs(invoiceTotal - poAmount) / poAmount;
     if (variance > tolerance) {
       price_variance_flag = true;
     }
   }
 
   await pool.query(
-    `
-    INSERT INTO invoice_po_matching_results
-    (invoice_id, organization_id, po_number,
-     matching_status, missing_po_flag,
-     price_variance_flag, bank_mismatch_flag,
-     matched_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())
-    ON CONFLICT (invoice_id, organization_id)
-    DO UPDATE SET
-      po_number = EXCLUDED.po_number,
-      matching_status = EXCLUDED.matching_status,
-      missing_po_flag = EXCLUDED.missing_po_flag,
-      price_variance_flag = EXCLUDED.price_variance_flag,
-      bank_mismatch_flag = EXCLUDED.bank_mismatch_flag,
-      matched_at = NOW()
-    `,
+    `INSERT INTO invoice_po_matching_results
+     (invoice_id, organization_id, po_number,
+      matching_status, missing_po_flag,
+      price_variance_flag, bank_mismatch_flag,
+      matched_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())
+     ON CONFLICT (invoice_id, organization_id)
+     DO UPDATE SET
+       po_number = EXCLUDED.po_number,
+       matching_status = EXCLUDED.matching_status,
+       missing_po_flag = EXCLUDED.missing_po_flag,
+       price_variance_flag = EXCLUDED.price_variance_flag,
+       bank_mismatch_flag = EXCLUDED.bank_mismatch_flag,
+       matched_at = NOW()`,
     [
       invoice_id,
       organization_id,
@@ -140,6 +132,8 @@ export async function execute(context) {
       bank_mismatch_flag
     ]
   );
+
+  await markDone(invoice_id, organization_id, "MATCHING");
 
   return {
     success: true,

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AP Orchestrator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--navy:#0f1f3d;--navy2:#1a3160;--blue:#1d4ed8;--blue-lt:#eff6ff;--blue-md:#dbeafe;--text:#111827;--text2:#374151;--muted:#6b7280;--muted2:#9ca3af;--border:#e5e7eb;--border2:#f3f4f6;--bg:#ffffff;--bg2:#f9fafb;--bg3:#f3f4f6;--green:#059669;--green-lt:#ecfdf5;--red:#dc2626;--red-lt:#fef2f2;--amber:#d97706;--amber-lt:#fffbeb;--purple:#7c3aed;--purple-lt:#f5f3ff;--shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);--shadow3:0 10px 15px rgba(0,0,0,0.08),0 4px 6px rgba(0,0,0,0.04);--r:8px;--font:'Inter',-apple-system,sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--font);background:var(--bg2);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--navy);display:flex;flex-direction:column;z-index:100;}
+.sb-logo{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,0.08);}
+.sb-logo-main{font-size:15px;font-weight:700;color:#fff;letter-spacing:-0.01em;margin-bottom:2px;}
+.sb-logo-sub{font-size:11px;color:rgba(255,255,255,0.38);}
+.sb-nav{padding:12px 10px;flex:1;display:flex;flex-direction:column;gap:2px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;cursor:pointer;font-size:13.5px;font-weight:500;color:rgba(255,255,255,0.5);transition:all 0.15s;border:none;background:transparent;width:100%;text-align:left;font-family:var(--font);}
+.nav-item:hover{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.85);}
+.nav-item.active{background:rgba(255,255,255,0.13);color:#fff;}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:0.65;}
+.nav-item.active svg{opacity:1;}
+.sb-foot{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.08);}
+.org-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(255,255,255,0.07);border-radius:20px;font-size:12px;color:rgba(255,255,255,0.45);font-weight:500;}
+.org-dot{width:6px;height:6px;border-radius:50%;background:#34d399;}
+.main{margin-left:220px;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:var(--bg);border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.page-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.01em;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--text2);transition:all 0.15s;font-family:var(--font);}
+.btn:hover{background:var(--bg2);}
+.btn.active{background:var(--bg3);border-color:#d1d5db;}
+.content{padding:28px 32px;flex:1;}
+.page{display:none;}
+.page.active{display:block;animation:fadeUp 0.18s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);}
+.stat-label{font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;}
+.stat-val{font-size:32px;font-weight:700;letter-spacing:-0.02em;line-height:1;margin-bottom:6px;}
+.stat-val.blue{color:var(--blue)}.stat-val.green{color:var(--green)}.stat-val.amber{color:var(--amber)}.stat-val.red{color:var(--red)}
+.stat-sub{font-size:12px;color:var(--muted2);}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-title{font-size:14px;font-weight:600;color:var(--text);}
+.sec-meta{font-size:12px;color:var(--muted);}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:24px;}
+.pipe-scroll{overflow-x:auto;padding-bottom:4px;}
+.pipe-board{display:flex;gap:10px;min-width:max-content;padding:20px;}
+.pipe-col{width:168px;flex-shrink:0;}
+.pipe-col-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 2px;}
+.pipe-col-name{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;}
+.pipe-col-count{font-size:11px;font-weight:700;color:var(--text2);background:var(--bg3);padding:1px 7px;border-radius:10px;}
+.pipe-col-body{background:var(--bg2);border:1px solid var(--border);border-radius:6px;min-height:96px;padding:6px;display:flex;flex-direction:column;gap:5px;}
+.pipe-card{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:9px 11px;cursor:pointer;transition:all 0.12s;box-shadow:var(--shadow);}
+.pipe-card:hover{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(29,78,216,0.06);transform:translateY(-1px);}
+.pipe-vendor{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+.pipe-amount{font-size:12px;font-weight:600;color:var(--blue);}
+.pipe-id{font-size:10px;color:var(--muted2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pipe-empty{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 0;font-size:11px;color:var(--muted2);}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:12px 20px;text-align:left;font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;background:var(--bg2);border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border2);transition:background 0.1s;cursor:pointer;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#f8faff;}
+td{padding:16px 20px;font-size:13.5px;color:var(--text2);white-space:nowrap;}
+.td-p{font-weight:600;color:var(--text);}
+.td-m{font-size:12.5px;color:var(--muted);}
+.td-a{font-weight:600;color:var(--blue);}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.b-COMPLETED{background:var(--green-lt);color:var(--green);}
+.b-BLOCKED{background:var(--red-lt);color:var(--red);}
+.b-EXCEPTION_REVIEW{background:var(--amber-lt);color:var(--amber);}
+.b-WAITING_INFO{background:var(--purple-lt);color:var(--purple);}
+.b-RECEIVED{background:var(--blue-md);color:var(--blue);}
+.b-default{background:var(--bg3);color:var(--muted);}
+.breach-tag{display:inline-flex;align-items:center;padding:3px 8px;background:var(--red-lt);border:1px solid #fecaca;border-radius:4px;font-size:11px;font-weight:600;color:var(--red);}
+.act-row{display:flex;gap:6px;}
+.act{padding:5px 12px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all 0.12s;font-family:var(--font);}
+.act-ok{background:var(--green-lt);border-color:#a7f3d0;color:var(--green);}
+.act-ok:hover{background:#d1fae5;}
+.act-no{background:var(--red-lt);border-color:#fecaca;color:var(--red);}
+.act-no:hover{background:#fee2e2;}
+.act-esc{background:var(--amber-lt);border-color:#fde68a;color:var(--amber);}
+.act-esc:hover{background:#fef3c7;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,31,61,0.28);z-index:200;}
+.overlay.open{display:flex;justify-content:flex-end;animation:fi 0.15s ease;}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.panel{width:520px;height:100vh;background:var(--bg);border-left:1px solid var(--border);overflow-y:auto;box-shadow:var(--shadow3);animation:si 0.2s ease;}
+@keyframes si{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
+.panel-hd{padding:24px 24px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.p-id{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;}
+.p-vendor{font-size:19px;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:3px;}
+.p-amount{font-size:24px;font-weight:700;color:var(--blue);letter-spacing:-0.02em;}
+.close-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;transition:all 0.12s;}
+.close-btn:hover{background:var(--red-lt);border-color:#fecaca;color:var(--red);}
+.panel-body{padding:24px;}
+.ps{margin-bottom:28px;}
+.ps-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.kk{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:3px;}
+.kv-val{font-size:13px;font-weight:600;color:var(--text);}
+.audit{display:flex;flex-direction:column;}
+.a-row{display:flex;gap:12px;padding-bottom:18px;}
+.a-row:last-child{padding-bottom:0;}
+.a-spine{display:flex;flex-direction:column;align-items:center;width:14px;flex-shrink:0;}
+.a-dot{width:10px;height:10px;border-radius:50%;background:var(--blue);border:2px solid var(--bg);box-shadow:0 0 0 2px var(--blue-md);flex-shrink:0;margin-top:3px;}
+.a-line{width:1px;flex:1;background:var(--border);margin-top:5px;}
+.a-row:last-child .a-line{display:none;}
+.a-info{flex:1;}
+.a-trans{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;}
+.a-s{font-size:11px;font-weight:600;padding:2px 7px;background:var(--bg3);color:var(--text2);border-radius:4px;}
+.a-s-new{background:var(--blue-md);color:var(--blue);}
+.a-arrow{color:var(--muted2);font-size:11px;}
+.a-reason{font-size:12px;color:var(--muted);margin-bottom:2px;}
+.a-time{font-size:11px;color:var(--muted2);}
+.p-actions{display:flex;gap:8px;margin-top:16px;}
+.p-act{flex:1;padding:10px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid;transition:all 0.12s;font-family:var(--font);}
+.toast{position:fixed;bottom:20px;right:20px;padding:11px 18px;background:var(--navy);color:#fff;border-radius:7px;font-size:13px;font-weight:500;box-shadow:var(--shadow3);opacity:0;transform:translateY(6px);transition:all 0.2s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.success{background:var(--green);}
+.toast.error{background:var(--red);}
+.empty{padding:52px 20px;text-align:center;color:var(--muted2);font-size:13px;}
+.empty-icon{font-size:28px;margin-bottom:10px;opacity:0.4;}
+.loading{padding:52px 20px;text-align:center;color:var(--muted2);font-size:13px;}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:sp 0.55s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-main">AP Orchestrator</div>
+    <div class="sb-logo-sub">Accounts Payable System</div>
+  </div>
+  <nav class="sb-nav">
+    <button class="nav-item active" onclick="showPage('overview',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Overview
+    </button>
+    <button class="nav-item" onclick="showPage('invoices',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Invoices
+    </button>
+    <button class="nav-item" onclick="showPage('approvals',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      Approvals
+    </button>
+    <button class="nav-item" onclick="showPage('sla',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      SLA Monitor
+    </button>
+    <button class="nav-item" onclick="showPage('tables',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M10 4v16M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
+      Data Tables
+    </button>
+  </nav>
+  <div class="sb-foot">
+    <div class="org-pill"><div class="org-dot"></div>ORG-1 &middot; CFO</div>
+  </div>
+</aside>
+<div class="main">
+  <header class="topbar">
+    <div class="page-title" id="page-title">Overview</div>
+    <button class="btn" onclick="refreshCurrent()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Refresh
+    </button>
+  </header>
+  <div class="content">
+    <div class="page active" id="page-overview">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Invoices</div><div class="stat-val blue" id="s-total">--</div><div class="stat-sub">all time</div></div>
+        <div class="stat-card"><div class="stat-label">Completed Today</div><div class="stat-val green" id="s-today">--</div><div class="stat-sub">processed</div></div>
+        <div class="stat-card"><div class="stat-label">Pending Approval</div><div class="stat-val amber" id="s-pending">--</div><div class="stat-sub">awaiting review</div></div>
+        <div class="stat-card"><div class="stat-label">Blocked</div><div class="stat-val red" id="s-blocked">--</div><div class="stat-sub">require attention</div></div>
+      </div>
+      <div class="sec-hd"><div class="sec-title">Pipeline</div><div class="sec-meta" id="pipe-meta"></div></div>
+      <div class="card"><div class="pipe-scroll"><div class="pipe-board" id="pipe-board"><div class="loading"><span class="spin"></span>Loading...</div></div></div></div>
+      <div class="sec-hd"><div class="sec-title">Recent Invoices</div></div>
+      <div class="card">
+        <table><thead><tr><th>Invoice</th><th>Vendor</th><th>Amount</th><th>Status</th><th>Received</th><th>Last Updated</th></tr></thead>
+        <tbody id="recent-tb"><tr><td colspan="6" class="loading"><span class="spin"></span>Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="page" id="page-invoices">
+      <div class="sec-hd"><div class="sec-title">All Invoices</div><div class="sec-meta" id="inv-meta"></div></div>
+      <div class="card">
+        <table><thead><tr><th>Invoice No.</th><th>Vendor</th><th>Amount</th><th>Status</th><th>Retries</th><th>Received</th><th>Time in State</th></tr></thead>
+        <tbody id="inv-tb"><tr><td colspan="7" class="loading"><span class="spin"></span>Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="page" id="page-approvals">
+      <div class="sec-hd"><div class="sec-title">Pending Approvals</div><div class="sec-meta" id="appr-meta"></div></div>
+      <div class="card">
+        <table><thead><tr><th>Invoice No.</th><th>Vendor</th><th>Amount</th><th>Required Role</th><th>Escalated</th><th>Waiting Since</th><th>Actions</th></tr></thead>
+        <tbody id="appr-tb"><tr><td colspan="7" class="loading"><span class="spin"></span>Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="page" id="page-sla">
+      <div class="sec-hd"><div class="sec-title">SLA Monitor</div><div class="sec-meta" id="sla-meta"></div></div>
+      <div class="card">
+        <table><thead><tr><th>Invoice ID</th><th>Vendor</th><th>Amount</th><th>State</th><th>SLA Limit</th><th>Overdue</th><th>Escalation</th></tr></thead>
+        <tbody id="sla-tb"><tr><td colspan="7" class="loading"><span class="spin"></span>Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="page" id="page-tables">
+      <div class="sec-hd"><div class="sec-title">Data Tables</div></div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn active" id="tab-invoices_raw" onclick="showTable('invoices_raw',this)">Invoices</button>
+        <button class="btn" id="tab-state_machine" onclick="showTable('state_machine',this)">State Machine</button>
+        <button class="btn" id="tab-appr_raw" onclick="showTable('appr_raw',this)">Approvals</button>
+        <button class="btn" id="tab-sla_raw" onclick="showTable('sla_raw',this)">SLA</button>
+      </div>
+      <div class="card"><div id="raw-content"><div class="loading"><span class="spin"></span>Loading...</div></div></div>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="overlay" onclick="closeOvl(event)">
+  <div class="panel">
+    <div class="panel-hd">
+      <div>
+        <div class="p-id" id="p-id">--</div>
+        <div class="p-vendor" id="p-vendor">--</div>
+        <div class="p-amount" id="p-amount">--</div>
+      </div>
+      <button class="close-btn" onclick="closePanel()">x</button>
+    </div>
+    <div class="panel-body" id="panel-body"><div class="loading"><span class="spin"></span>Loading...</div></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const API="http://localhost:3000/api/dashboard",RAPI="http://localhost:3000/api/review",ORG="ORG-1";
+const STATES=["RECEIVED","STRUCTURED","DUPLICATE_CHECK","VALIDATING","MATCHING","COMPLIANCE","PAYMENT_READY","PENDING_APPROVAL","EXCEPTION_REVIEW","WAITING_INFO","APPROVED","ACCOUNTING","COMPLETED","BLOCKED"];
+let curPage="overview";
+const fmt={a:v=>v?"\u20b9"+parseFloat(v).toLocaleString("en-IN",{maximumFractionDigits:2}):"--",d:v=>v?new Date(v).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"--",dt:v=>{if(!v)return"--";const d=new Date(v);return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+", "+d.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});},id:v=>v?(v.length>14?v.slice(0,8)+"..."+v.slice(-4):v):"--",dur:v=>{const h=parseFloat(v)||0;if(!h)return"--";if(h<1)return"< 1h";if(h<24)return Math.round(h)+"h";return Math.round(h/24)+"d";}};
+function bdg(s){const c=["COMPLETED","BLOCKED","EXCEPTION_REVIEW","WAITING_INFO","RECEIVED"].includes(s)?`b-${s}`:"b-default";return`<span class="badge ${c}">${s.replace(/_/g," ")}</span>`;}
+function showPage(n,b){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(x=>x.classList.remove("active"));document.getElementById("page-"+n).classList.add("active");if(b)b.classList.add("active");const T={overview:"Overview",invoices:"Invoices",approvals:"Approvals",sla:"SLA Monitor",tables:"Data Tables"};document.getElementById("page-title").textContent=T[n]||n;curPage=n;loadPage(n);}
+function loadPage(n){if(n==="overview")loadOv();if(n==="invoices")loadInv();if(n==="approvals")loadAppr();if(n==="sla")loadSLA();if(n==="tables")showTable("invoices_raw",document.getElementById("tab-invoices_raw"));}
+function refreshCurrent(){loadPage(curPage);toast("Refreshed");}
+async function loadOv(){try{const[stats,invs]=await Promise.all([fetch(`${API}/stats/${ORG}`).then(r=>r.json()),fetch(`${API}/invoices/${ORG}`).then(r=>r.json())]);document.getElementById("s-total").textContent=invs.length;document.getElementById("s-today").textContent=stats.completed_today;document.getElementById("s-pending").textContent=stats.pending_approval;document.getElementById("s-blocked").textContent=stats.blocked;const bs={};STATES.forEach(s=>bs[s]=[]);invs.forEach(i=>{if(bs[i.current_state])bs[i.current_state].push(i);});const board=document.getElementById("pipe-board");board.innerHTML="";let tot=0;STATES.forEach(s=>{const cs=bs[s];if(s==="STRUCTURED"&&!cs.length)return;tot+=cs.length;const col=document.createElement("div");col.className="pipe-col";col.innerHTML=`<div class="pipe-col-hd"><span class="pipe-col-name">${s.replace(/_/g," ")}</span><span class="pipe-col-count">${cs.length}</span></div><div class="pipe-col-body">${!cs.length?"<div class=\"pipe-empty\">Empty</div>":cs.map(i=>`<div class="pipe-card" onclick="openDetail(\'${i.invoice_id}\')" ><div class="pipe-vendor">${i.vendor_name||"Unknown"}</div><div class="pipe-amount">${fmt.a(i.total_amount)}</div><div class="pipe-id">${fmt.id(i.invoice_id)}</div></div>`).join("")}</div>`;board.appendChild(col);});document.getElementById("pipe-meta").textContent=tot+" invoices";const tb=document.getElementById("recent-tb");tb.innerHTML=invs.slice(0,10).map(i=>`<tr onclick="openDetail(\'${i.invoice_id}\')" ><td class="td-p">${i.invoice_number||fmt.id(i.invoice_id)}</td><td>${i.vendor_name||"--"}</td><td class="td-a">${fmt.a(i.total_amount)}</td><td>${bdg(i.current_state)}</td><td class="td-m">${fmt.dt(i.received_at)}</td><td class="td-m">${fmt.dt(i.last_updated)}</td></tr>`).join("")||`<tr><td colspan="6"><div class="empty"><div class="empty-icon">&#128196;</div>No invoices yet</div></td></tr>`;}catch(e){toast("Failed to load overview","error");}}
+async function loadInv(){try{const d=await fetch(`${API}/invoices/${ORG}`).then(r=>r.json());document.getElementById("inv-meta").textContent=d.length+" total";document.getElementById("inv-tb").innerHTML=d.length?d.map(i=>`<tr onclick="openDetail(\'${i.invoice_id}\')" ><td class="td-p">${i.invoice_number||fmt.id(i.invoice_id)}</td><td>${i.vendor_name||"--"}</td><td class="td-a">${fmt.a(i.total_amount)}</td><td>${bdg(i.current_state)}</td><td style="color:${i.retry_count>0?"var(--amber)":"var(--muted2)"};font-weight:${i.retry_count>0?600:400}">${i.retry_count}</td><td class="td-m">${fmt.dt(i.received_at)}</td><td class="td-m">${fmt.dur(i.time_in_state)}</td></tr>`).join(""):`<tr><td colspan="7"><div class="empty"><div class="empty-icon">&#128196;</div>No invoices</div></td></tr>`;}catch(e){toast("Failed","error");}}
+async function loadAppr(){try{const d=await fetch(`${API}/approvals/${ORG}`).then(r=>r.json());document.getElementById("appr-meta").textContent=d.length+" pending";document.getElementById("appr-tb").innerHTML=d.length?d.map(i=>`<tr><td class="td-p">${i.invoice_number||fmt.id(i.invoice_id)}</td><td>${i.vendor_name||"--"}</td><td class="td-a">${fmt.a(i.total_amount)}</td><td><span class="badge b-default">${i.required_approval_level||"--"}</span></td><td>${i.escalated?"<span class=\"breach-tag\">Escalated</span>":"<span style=\"color:var(--muted2)\">--</span>"}</td><td class="td-m">${fmt.dt(i.sent_for_approval_at)}</td><td><div class="act-row"><button class="act act-ok" onclick="decide(\'${i.invoice_id}\',\'APPROVE\')">Approve</button><button class="act act-no" onclick="decide(\'${i.invoice_id}\',\'BLOCK\')">Reject</button></div></td></tr>`).join(""):`<tr><td colspan="7"><div class="empty"><div class="empty-icon">&#10003;</div>No pending approvals</div></td></tr>`;}catch(e){toast("Failed","error");}}
+async function loadSLA(){try{const d=await fetch(`${API}/sla/${ORG}`).then(r=>r.json());document.getElementById("sla-meta").textContent=d.length?d.length+" breached":"All clear";document.getElementById("sla-tb").innerHTML=d.length?d.map(i=>`<tr onclick="openDetail(\'${i.invoice_id}\')" ><td class="td-m">${fmt.id(i.invoice_id)}</td><td>${i.vendor_name||"--"}</td><td class="td-a">${fmt.a(i.total_amount)}</td><td>${bdg(i.current_state)}</td><td class="td-m">${i.sla_days}d</td><td><span class="breach-tag">${Math.round(parseFloat(i.hours_in_state))}h overdue</span></td><td><span class="badge b-default">${i.escalation_level}</span></td></tr>`).join(""):`<tr><td colspan="7"><div class="empty"><div class="empty-icon">&#10003;</div>No SLA breaches</div></td></tr>`;}catch(e){toast("Failed","error");}}
+async function showTable(n,b){document.querySelectorAll("#page-tables .btn").forEach(x=>x.classList.remove("active"));if(b)b.classList.add("active");const el=document.getElementById("raw-content");el.innerHTML="<div class=\"loading\"><span class=\"spin\"></span>Loading...</div>";try{let data,cols;if(n==="invoices_raw"||n==="state_machine"){data=await fetch(`${API}/invoices/${ORG}`).then(r=>r.json());cols=n==="invoices_raw"?["invoice_id","invoice_number","vendor_name","total_amount","current_state","received_at"]:["invoice_id","current_state","last_updated","retry_count"];}else if(n==="appr_raw"){data=await fetch(`${API}/approvals/${ORG}`).then(r=>r.json());cols=["invoice_id","invoice_number","vendor_name","total_amount","required_approval_level","escalated","sent_for_approval_at"];}else if(n==="sla_raw"){data=await fetch(`${API}/sla/${ORG}`).then(r=>r.json());cols=["invoice_id","vendor_name","current_state","sla_days","hours_in_state","escalation_level"];}if(!data?.length){el.innerHTML="<div class=\"empty\"><div class=\"empty-icon\">&#128202;</div>No data</div>";return;}el.innerHTML=`<table><thead><tr>${cols.map(c=>`<th>${c.replace(/_/g," ")}</th>`).join("")}</tr></thead><tbody>${data.map(r=>`<tr onclick="openDetail(\'${r.invoice_id}\')" >${cols.map(c=>`<td class="td-m">${r[c]??"--"}</td>`).join("")}</tr>`).join("")}</tbody></table>`;}catch(e){el.innerHTML="<div class=\"empty\">Failed to load</div>";}}
+async function openDetail(id){const ov=document.getElementById("overlay"),body=document.getElementById("panel-body");ov.classList.add("open");body.innerHTML="<div class=\"loading\"><span class=\"spin\"></span>Loading...</div>";document.getElementById("p-id").textContent=fmt.id(id);document.getElementById("p-vendor").textContent="--";document.getElementById("p-amount").textContent="--";try{const d=await fetch(`${API}/invoice/${ORG}/${id}`).then(r=>r.json());if(d.extracted?.data){document.getElementById("p-vendor").textContent=d.extracted.data.vendor_name||"--";document.getElementById("p-amount").textContent=fmt.a(d.extracted.data.total_amount);}let html="";if(d.extracted?.data){const e=d.extracted.data;html+=sec("Extracted Data",`<div class="kv">${kv("Invoice #",e.invoice_number)}${kv("PO Number",e.po_number)}${kv("Invoice Date",fmt.d(e.invoice_date))}${kv("Due Date",fmt.d(e.due_date))}${kv("Subtotal",fmt.a(e.subtotal))}${kv("Tax",fmt.a(e.tax))}${kvc("Total",fmt.a(e.total_amount),"var(--blue)")}${kv("Category",e.expense_category)}${kv("GSTIN",e.gstin)}${kv("Payment Method",e.payment_method)}</div>`);}if(d.validation){const v=d.validation;html+=sec("Validation",`<div class="kv">${kvc("Legal",v.legal_status,v.legal_status==="PASS"?"var(--green)":"var(--red)")}${kvc("Tax",v.tax_status,v.tax_status==="PASS"?"var(--green)":"var(--amber)")}${kvc("Bank",v.bank_status,v.bank_status==="PASS"?"var(--green)":"var(--red)")}${kvc("Overall",v.overall_status,v.overall_status==="VALID"?"var(--green)":"var(--amber)")}</div>`);}if(d.matching){const m=d.matching;html+=sec("PO Matching",`<div class="kv">${kv("PO Number",m.po_number)}${kvc("Status",m.matching_status,m.matching_status==="MATCHED"?"var(--green)":"var(--red)")}${kvc("Missing PO",m.missing_po_flag?"Yes":"No",m.missing_po_flag?"var(--red)":"var(--green)")}${kvc("Price Variance",m.price_variance_flag?"Yes":"No",m.price_variance_flag?"var(--amber)":"var(--green)")}${kvc("Bank Mismatch",m.bank_mismatch_flag?"Yes":"No",m.bank_mismatch_flag?"var(--red)":"var(--green)")}</div>`);}if(d.payment){const p=d.payment;html+=sec("Payment",`<div class="kv">${kvc("Status",p.payment_status,p.payment_status==="PAID"?"var(--green)":"var(--amber)")}${kv("Method",p.payment_method)}${kv("Due Date",fmt.d(p.payment_due_date))}${kv("Paid At",fmt.dt(p.paid_at))}</div>`);}if(d.approval){const a=d.approval;const acts=a.approval_status==="PENDING"?`<div class="p-actions"><button class="p-act act-ok" onclick="decide(\'${id}\',\'APPROVE\')">Approve</button><button class="p-act act-no" onclick="decide(\'${id}\',\'BLOCK\')">Reject</button><button class="p-act act-esc" onclick="decide(\'${id}\',\'ESCALATE\')">Escalate</button></div>`:"";html+=sec("Approval",`<div class="kv">${kv("Required Level",a.required_approval_level)}${kv("Status",a.approval_status)}${kvc("Escalated",a.escalated?"Yes":"No",a.escalated?"var(--red)":"")}${kv("Decision At",fmt.dt(a.decision_at))}</div>${acts}`);}if(d.audit_trail?.length){html+=sec("Audit Trail",`<div class="audit">${d.audit_trail.map(a=>`<div class="a-row"><div class="a-spine"><div class="a-dot"></div><div class="a-line"></div></div><div class="a-info"><div class="a-trans">${a.old_state?`<span class="a-s">${a.old_state}</span><span class="a-arrow">&#8594;</span>`:"" }<span class="a-s a-s-new">${a.new_state}</span></div>${a.reason?`<div class="a-reason">${a.reason}</div>`:""}<div class="a-time">${fmt.dt(a.created_at)}</div></div></div>`).join("")}</div>`);}body.innerHTML=html||"<div class=\"empty\">No data available</div>";}catch(e){body.innerHTML="<div class=\"empty\">Failed to load</div>";toast("Failed","error");}}
+function sec(t,c){return`<div class="ps"><div class="ps-title">${t}</div>${c}</div>`;}
+function kv(k,v){return`<div><div class="kk">${k}</div><div class="kv-val">${v||"--"}</div></div>`;}
+function kvc(k,v,c){return`<div><div class="kk">${k}</div><div class="kv-val" style="color:${c}">${v||"--"}</div></div>`;}
+function closeOvl(e){if(e.target===document.getElementById("overlay"))closePanel();}
+function closePanel(){document.getElementById("overlay").classList.remove("open");}
+async function decide(id,dec){try{const r=await fetch(`${RAPI}/${id}/decision`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({decision:dec,reviewer_role:"CFO",reviewer_name:"CFO",comment:`${dec} via dashboard`})});if(!r.ok){const e=await r.json();toast(e.error||"Failed","error");return;}toast(dec==="APPROVE"?"Approved":dec==="BLOCK"?"Rejected":"Escalated","success");closePanel();setTimeout(()=>loadAppr(),600);}catch(e){toast("Request failed","error");}}
+function toast(msg,type=""){const el=document.getElementById("toast");el.textContent=msg;el.className="toast show "+type;setTimeout(()=>el.className="toast",2500);}
+loadOv();
+</script>
+</body>
+</html>

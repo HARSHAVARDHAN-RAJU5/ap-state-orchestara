@@ -1,4 +1,5 @@
 import pool from "../db.js";
+import { isAlreadyDone, markDone } from "../core/workerIdempotency.js";
 
 export async function execute(context) {
 
@@ -12,7 +13,18 @@ export async function execute(context) {
     return { success: false, reason: "Approval levels not configured" };
   }
 
-  // fetch invoice amount
+  if (await isAlreadyDone(invoice_id, organization_id, "PENDING_APPROVAL")) {
+    const cached = await pool.query(
+      `SELECT required_approval_level
+       FROM invoice_approval_workflow
+       WHERE invoice_id = $1 AND organization_id = $2`,
+      [invoice_id, organization_id]
+    );
+    if (cached.rows.length) {
+      return { success: true, required_approval_level: cached.rows[0].required_approval_level };
+    }
+  }
+
   const invoiceRes = await pool.query(
     `SELECT data
      FROM invoice_extracted_data
@@ -25,18 +37,13 @@ export async function execute(context) {
     return { success: false, reason: "Invoice data not found" };
   }
 
-  const invoiceTotal = parseFloat(
-    invoiceRes.rows[0].data?.total_amount || 0
-  );
+  const invoiceTotal = parseFloat(invoiceRes.rows[0].data?.total_amount || 0);
 
   if (!invoiceTotal) {
     return { success: false, reason: "Invoice total missing" };
   }
 
-  // match invoice amount to correct approval tier
-  const levels = [...config.approval.levels]
-    .sort((a, b) => b.min_amount - a.min_amount);
-
+  const levels = [...config.approval.levels].sort((a, b) => b.min_amount - a.min_amount);
   const matched = levels.find(l => invoiceTotal >= l.min_amount);
 
   if (!matched) {
@@ -45,7 +52,6 @@ export async function execute(context) {
 
   const required_approval_level = matched.approver_role;
 
-  // store in workflow table
   await pool.query(
     `INSERT INTO invoice_approval_workflow
       (invoice_id, organization_id, approval_level,
@@ -56,16 +62,10 @@ export async function execute(context) {
       approval_level = EXCLUDED.approval_level,
       required_approval_level = EXCLUDED.required_approval_level,
       approval_status = EXCLUDED.approval_status`,
-    [
-      invoice_id,
-      organization_id,
-      required_approval_level,
-      required_approval_level
-    ]
+    [invoice_id, organization_id, required_approval_level, required_approval_level]
   );
 
-  return {
-    success: true,
-    required_approval_level
-  };
+  await markDone(invoice_id, organization_id, "PENDING_APPROVAL");
+
+  return { success: true, required_approval_level };
 }

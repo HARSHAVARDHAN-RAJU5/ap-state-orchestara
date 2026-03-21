@@ -1,5 +1,10 @@
 import pool from "../db.js";
 import crypto from "crypto";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
+const APP_URL    = process.env.APP_URL    || "https://yourdomain.com";
 
 async function generateEmailBody(invoiceId, issueContext, recoveryLink) {
 
@@ -25,27 +30,40 @@ Instructions:
 - Return only the email body text
 `;
 
-  const response = await fetch("http://127.0.0.1:11434/api/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "llama3",
-      prompt,
-      stream: false
-    })
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-  if (!response.ok) {
-    throw new Error("LLM email generation failed");
+  try {
+
+    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "llama3.2:1b",
+        prompt,
+        stream: false
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error("LLM email generation failed");
+    }
+
+    const data = await response.json();
+
+    if (!data.response) {
+      throw new Error("Invalid LLM response");
+    }
+
+    return data.response.trim();
+
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-
-  const data = await response.json();
-
-  if (!data.response) {
-    throw new Error("Invalid LLM response");
-  }
-
-  return data.response.trim();
 }
 
 export async function execute(context) {
@@ -59,21 +77,17 @@ export async function execute(context) {
 
   const token = crypto.randomBytes(32).toString("hex");
 
-  const recoveryLink =
-    `https://yourdomain.com/${organization_id}/api/recovery/upload?token=${token}`;
+  const recoveryLink = `${APP_URL}/${organization_id}/api/recovery/upload?token=${token}`;
 
   await pool.query(
-    `
-    UPDATE invoice_state_machine
-    SET waiting_since = NOW(),
-        waiting_deadline = NOW() + INTERVAL '10 days',
-        verification_token = $1,
-        token_expiry = NOW() + INTERVAL '10 days',
-        waiting_reason = $2,
-        last_updated = NOW()
-    WHERE invoice_id = $3
-    AND organization_id = $4
-    `,
+    `UPDATE invoice_state_machine
+     SET waiting_since      = NOW(),
+         waiting_deadline   = NOW() + INTERVAL '10 days',
+         verification_token = $1,
+         token_expiry       = NOW() + INTERVAL '10 days',
+         waiting_reason     = $2,
+         last_updated       = NOW()
+     WHERE invoice_id = $3 AND organization_id = $4`,
     [token, reason, invoice_id, organization_id]
   );
 
@@ -82,18 +96,14 @@ export async function execute(context) {
   try {
 
     const validationRes = await pool.query(
-      `
-      SELECT legal_status, bank_status, tax_status
-      FROM invoice_validation_results
-      WHERE invoice_id = $1
-      AND organization_id = $2
-      `,
+      `SELECT legal_status, bank_status, tax_status
+       FROM invoice_validation_results
+       WHERE invoice_id = $1 AND organization_id = $2`,
       [invoice_id, organization_id]
     );
 
     if (validationRes.rows.length) {
       const v = validationRes.rows[0];
-
       issueContext = `
 Reason: ${reason}
 
@@ -111,11 +121,7 @@ Vendor Validation Summary:
   let emailBody;
 
   try {
-    emailBody = await generateEmailBody(
-      invoice_id,
-      issueContext,
-      recoveryLink
-    );
+    emailBody = await generateEmailBody(invoice_id, issueContext, recoveryLink);
   } catch (err) {
 
     console.error("LLM failed. Using fallback template.");
@@ -137,9 +143,32 @@ Regards,
 Accounts Payable Team
 `;
   }
+     const vendorRes = await pool.query(
+    `SELECT email FROM vendor_master
+    WHERE organization_id = $1
+    LIMIT 1`,
+    [organization_id]
+  );
 
-  console.log("Sending vendor notification for invoice:", invoice_id);
-  console.log(emailBody);
+  const vendorEmail = vendorRes.rows[0]?.email;
 
+  if (!vendorEmail) {
+    console.error("No vendor email found for:", organization_id);
+    return { success: false, reason: "Vendor email not found" };
+  }
+
+  const { error } = await resend.emails.send({
+    from: "onboarding@resend.dev",
+    to: vendorEmail,
+    subject: `Action Required: Invoice ${invoice_id}`,
+    text: emailBody
+  });
+
+  if (error) {
+    console.error("Resend failed:", error);
+    return { success: false, reason: "Email send failed" };
+  }
+
+  console.log("Email sent to vendor:", vendorEmail);
   return { success: true };
 }

@@ -27,6 +27,7 @@ router.post("/:invoice_id/pay", async (req, res) => {
       return res.status(400).json({ error: "Invoice not in PAYMENT_READY state" });
     }
 
+    // Log the manual trigger in audit
     await pool.query(
       `INSERT INTO audit_event_log
        (invoice_id, organization_id, old_state, new_state, reason)
@@ -34,6 +35,7 @@ router.post("/:invoice_id/pay", async (req, res) => {
       [invoice_id, organization_id, "PAYMENT_READY", "PAYMENT_READY", "Manual payment trigger via API"]
     );
 
+    // Wake orchestrator — let it handle the state transition properly
     await redis.xAdd("invoice_events", "*", {
       invoice_id,
       organization_id
