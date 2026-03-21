@@ -1,7 +1,0 @@
-INVOICE NUMBER: INV-1001
-Vendor: ABC Traders Pvt Ltd
-Tax ID: TAX12345
-PO Number: PO-001
-Total Amount: 15000
-VAT: 2700
-Bank Account: 1234567890
