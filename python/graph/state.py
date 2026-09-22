@@ -9,3 +9,5 @@ class InvoiceState(TypedDict):
     reason: Optional[str]
     retry_count: int
     config: Optional[dict]
+    # hops taken during this run: [{"from", "to", "reason"}] — written to audit_event_log
+    history: list

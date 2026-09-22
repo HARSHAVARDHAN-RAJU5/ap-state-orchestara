@@ -186,6 +186,17 @@ def run(state: dict) -> dict:
         (journal_id, int(os.getenv("BANK_ACCOUNT_ID", 3001)), 0, amount)  # Cr Bank
     )
 
+    # register as paid — duplicate_worker checks this to stop double payment
+    cur.execute(
+        """
+        INSERT INTO paid_invoice_registry
+            (invoice_id, organization_id, invoice_number, vendor_name, total_amount, paid_at)
+        VALUES (%s, %s, %s, %s, %s, NOW())
+        ON CONFLICT (organization_id, invoice_number, vendor_name) DO NOTHING
+        """,
+        (invoice_id, organization_id, invoice.get("invoice_number"), invoice.get("vendor_name"), amount)
+    )
+
     conn.commit()
     cur.close()
     conn.close()

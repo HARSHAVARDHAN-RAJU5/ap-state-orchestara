@@ -7,6 +7,8 @@ from workers.fraud_worker import run as fraud_run
 from workers.compliance_worker import run as compliance_run
 from workers.payment_worker import run as payment_run
 from workers.accounting_worker import run as accounting_run
+from workers.pending_approval_worker import run as pending_approval_run
+from workers.exception_review_worker import run as exception_review_run
 
 def intake_node(state: InvoiceState) -> InvoiceState:
     return intake_run(state)
@@ -30,10 +32,10 @@ def payment_node(state: InvoiceState) -> InvoiceState:
     return payment_run(state)
 
 def pending_approval_node(state: InvoiceState) -> InvoiceState:
-    return {**state, "next_state": "PENDING_APPROVAL", "reason": "Waiting for approval"}
+    return pending_approval_run(state)
 
 def exception_review_node(state: InvoiceState) -> InvoiceState:
-    return {**state, "next_state": "EXCEPTION_REVIEW", "reason": "Waiting for review"}
+    return exception_review_run(state)
 
 def accounting_node(state: InvoiceState) -> InvoiceState:
     return accounting_run(state)

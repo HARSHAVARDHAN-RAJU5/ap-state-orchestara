@@ -3,6 +3,7 @@ from policy_engine import load_config
 import pdfplumber
 import requests
 import json
+import os
 
 def run(state: dict) -> dict:
     invoice_id = state["invoice_id"]
@@ -73,8 +74,8 @@ Invoice Text:
 
     try:
         response = requests.post(
-            "http://127.0.0.1:11434/api/generate",
-            json={"model": "llama3", "prompt": prompt, "stream": False},
+            f"{os.getenv('OLLAMA_URL', 'http://127.0.0.1:11434')}/api/generate",
+            json={"model": os.getenv("OLLAMA_MODEL", "llama3"), "prompt": prompt, "stream": False},
             timeout=60
         )
         raw = response.json()["response"]

@@ -6,19 +6,8 @@ def run(state: dict) -> dict:
     organization_id = state["organization_id"]
     config = state.get("config", {})
 
-    # check state is PAYMENT_READY
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT current_state FROM invoice_state_machine WHERE invoice_id = %s AND organization_id = %s",
-        (invoice_id, organization_id)
-    )
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
-
-    if not row or row[0] != "PAYMENT_READY":
-        return {**state, "next_state": None, "reason": "Wrong state for payment scheduling"}
+    # no DB state check here — the DB is only updated after the whole graph run,
+    # so mid-run it still holds the entry state. The graph guarantees we're in PAYMENT_READY.
 
     # get extracted invoice data
     conn = get_connection()
