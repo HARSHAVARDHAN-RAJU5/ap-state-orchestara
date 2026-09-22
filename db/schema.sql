@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict f3iuOP5hMzdzDx4nXknKqQ1wx5MPd1jcKXERRc8lhNJNFgzSeXKtntFu3ddUpu8
+\restrict yg9l2eCALJQRZ0GhhJgGAqCrXgsLg7JkysyguSlTUx1SBT2zcrIEvsU5C1qg8Pa
 
 -- Dumped from database version 15.15
 -- Dumped by pg_dump version 15.15
@@ -23,7 +23,7 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: account_mapping; Type: TABLE; Schema: public; Owner: postgres
+-- Name: account_mapping; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.account_mapping (
@@ -34,10 +34,8 @@ CREATE TABLE public.account_mapping (
 );
 
 
-ALTER TABLE public.account_mapping OWNER TO postgres;
-
 --
--- Name: agent_action_log; Type: TABLE; Schema: public; Owner: postgres
+-- Name: agent_action_log; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.agent_action_log (
@@ -56,10 +54,8 @@ CREATE TABLE public.agent_action_log (
 );
 
 
-ALTER TABLE public.agent_action_log OWNER TO postgres;
-
 --
--- Name: agent_reflection_log; Type: TABLE; Schema: public; Owner: postgres
+-- Name: agent_reflection_log; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.agent_reflection_log (
@@ -75,10 +71,8 @@ CREATE TABLE public.agent_reflection_log (
 );
 
 
-ALTER TABLE public.agent_reflection_log OWNER TO postgres;
-
 --
--- Name: agent_reflection_log_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: agent_reflection_log_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.agent_reflection_log_id_seq
@@ -90,17 +84,15 @@ CREATE SEQUENCE public.agent_reflection_log_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.agent_reflection_log_id_seq OWNER TO postgres;
-
 --
--- Name: agent_reflection_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: agent_reflection_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.agent_reflection_log_id_seq OWNED BY public.agent_reflection_log.id;
 
 
 --
--- Name: approval_config; Type: TABLE; Schema: public; Owner: postgres
+-- Name: approval_config; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.approval_config (
@@ -111,10 +103,8 @@ CREATE TABLE public.approval_config (
 );
 
 
-ALTER TABLE public.approval_config OWNER TO postgres;
-
 --
--- Name: audit_event_log; Type: TABLE; Schema: public; Owner: postgres
+-- Name: audit_event_log; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.audit_event_log (
@@ -128,10 +118,8 @@ CREATE TABLE public.audit_event_log (
 );
 
 
-ALTER TABLE public.audit_event_log OWNER TO postgres;
-
 --
--- Name: audit_event_log_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: audit_event_log_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.audit_event_log_id_seq
@@ -143,17 +131,15 @@ CREATE SEQUENCE public.audit_event_log_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.audit_event_log_id_seq OWNER TO postgres;
-
 --
--- Name: audit_event_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: audit_event_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.audit_event_log_id_seq OWNED BY public.audit_event_log.id;
 
 
 --
--- Name: exception_review_decisions; Type: TABLE; Schema: public; Owner: postgres
+-- Name: exception_review_decisions; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.exception_review_decisions (
@@ -165,14 +151,13 @@ CREATE TABLE public.exception_review_decisions (
     decided_at timestamp without time zone DEFAULT now(),
     organization_id text NOT NULL,
     reviewer_role text,
-    reviewer_name text
+    reviewer_name text,
+    review_cycle integer DEFAULT 0 NOT NULL
 );
 
 
-ALTER TABLE public.exception_review_decisions OWNER TO postgres;
-
 --
--- Name: exception_review_decisions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: exception_review_decisions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.exception_review_decisions_id_seq
@@ -184,17 +169,15 @@ CREATE SEQUENCE public.exception_review_decisions_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.exception_review_decisions_id_seq OWNER TO postgres;
-
 --
--- Name: exception_review_decisions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: exception_review_decisions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.exception_review_decisions_id_seq OWNED BY public.exception_review_decisions.id;
 
 
 --
--- Name: failure_patterns; Type: TABLE; Schema: public; Owner: postgres
+-- Name: failure_patterns; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.failure_patterns (
@@ -207,10 +190,8 @@ CREATE TABLE public.failure_patterns (
 );
 
 
-ALTER TABLE public.failure_patterns OWNER TO postgres;
-
 --
--- Name: failure_patterns_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: failure_patterns_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.failure_patterns_id_seq
@@ -222,17 +203,15 @@ CREATE SEQUENCE public.failure_patterns_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.failure_patterns_id_seq OWNER TO postgres;
-
 --
--- Name: failure_patterns_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: failure_patterns_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.failure_patterns_id_seq OWNED BY public.failure_patterns.id;
 
 
 --
--- Name: invoice_approval_workflow; Type: TABLE; Schema: public; Owner: postgres
+-- Name: invoice_approval_workflow; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoice_approval_workflow (
@@ -250,10 +229,8 @@ CREATE TABLE public.invoice_approval_workflow (
 );
 
 
-ALTER TABLE public.invoice_approval_workflow OWNER TO postgres;
-
 --
--- Name: invoice_approval_workflow_workflow_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: invoice_approval_workflow_workflow_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.invoice_approval_workflow_workflow_id_seq
@@ -265,17 +242,15 @@ CREATE SEQUENCE public.invoice_approval_workflow_workflow_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.invoice_approval_workflow_workflow_id_seq OWNER TO postgres;
-
 --
--- Name: invoice_approval_workflow_workflow_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: invoice_approval_workflow_workflow_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.invoice_approval_workflow_workflow_id_seq OWNED BY public.invoice_approval_workflow.workflow_id;
 
 
 --
--- Name: invoice_compliance_results; Type: TABLE; Schema: public; Owner: postgres
+-- Name: invoice_compliance_results; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoice_compliance_results (
@@ -290,10 +265,8 @@ CREATE TABLE public.invoice_compliance_results (
 );
 
 
-ALTER TABLE public.invoice_compliance_results OWNER TO postgres;
-
 --
--- Name: invoice_extracted_data; Type: TABLE; Schema: public; Owner: postgres
+-- Name: invoice_extracted_data; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoice_extracted_data (
@@ -305,10 +278,8 @@ CREATE TABLE public.invoice_extracted_data (
 );
 
 
-ALTER TABLE public.invoice_extracted_data OWNER TO postgres;
-
 --
--- Name: invoice_fraud_scores; Type: TABLE; Schema: public; Owner: postgres
+-- Name: invoice_fraud_scores; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoice_fraud_scores (
@@ -320,10 +291,45 @@ CREATE TABLE public.invoice_fraud_scores (
 );
 
 
-ALTER TABLE public.invoice_fraud_scores OWNER TO postgres;
+--
+-- Name: invoice_payment_approvals; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.invoice_payment_approvals (
+    id integer NOT NULL,
+    invoice_id text NOT NULL,
+    organization_id text NOT NULL,
+    decision text NOT NULL,
+    reason text,
+    reviewer_role text NOT NULL,
+    reviewer_name text NOT NULL,
+    decided_at timestamp with time zone DEFAULT now() NOT NULL,
+    processed boolean DEFAULT false NOT NULL
+);
+
 
 --
--- Name: invoice_payment_schedule; Type: TABLE; Schema: public; Owner: postgres
+-- Name: invoice_payment_approvals_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.invoice_payment_approvals_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: invoice_payment_approvals_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.invoice_payment_approvals_id_seq OWNED BY public.invoice_payment_approvals.id;
+
+
+--
+-- Name: invoice_payment_schedule; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoice_payment_schedule (
@@ -338,10 +344,8 @@ CREATE TABLE public.invoice_payment_schedule (
 );
 
 
-ALTER TABLE public.invoice_payment_schedule OWNER TO postgres;
-
 --
--- Name: invoice_payment_schedule_payment_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: invoice_payment_schedule_payment_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.invoice_payment_schedule_payment_id_seq
@@ -353,17 +357,15 @@ CREATE SEQUENCE public.invoice_payment_schedule_payment_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.invoice_payment_schedule_payment_id_seq OWNER TO postgres;
-
 --
--- Name: invoice_payment_schedule_payment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: invoice_payment_schedule_payment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.invoice_payment_schedule_payment_id_seq OWNED BY public.invoice_payment_schedule.payment_id;
 
 
 --
--- Name: invoice_po_matching_results; Type: TABLE; Schema: public; Owner: postgres
+-- Name: invoice_po_matching_results; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoice_po_matching_results (
@@ -379,10 +381,8 @@ CREATE TABLE public.invoice_po_matching_results (
 );
 
 
-ALTER TABLE public.invoice_po_matching_results OWNER TO postgres;
-
 --
--- Name: invoice_risk_assessment; Type: TABLE; Schema: public; Owner: postgres
+-- Name: invoice_risk_assessment; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoice_risk_assessment (
@@ -400,10 +400,8 @@ CREATE TABLE public.invoice_risk_assessment (
 );
 
 
-ALTER TABLE public.invoice_risk_assessment OWNER TO postgres;
-
 --
--- Name: invoice_state_machine; Type: TABLE; Schema: public; Owner: postgres
+-- Name: invoice_state_machine; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoice_state_machine (
@@ -419,14 +417,13 @@ CREATE TABLE public.invoice_state_machine (
     token_expiry timestamp without time zone,
     payment_retry_count integer DEFAULT 0 NOT NULL,
     organization_id text NOT NULL,
-    last_sla_emitted_at timestamp with time zone
+    last_sla_emitted_at timestamp with time zone,
+    review_cycle integer DEFAULT 0 NOT NULL
 );
 
 
-ALTER TABLE public.invoice_state_machine OWNER TO postgres;
-
 --
--- Name: invoice_validation_results; Type: TABLE; Schema: public; Owner: postgres
+-- Name: invoice_validation_results; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoice_validation_results (
@@ -441,10 +438,8 @@ CREATE TABLE public.invoice_validation_results (
 );
 
 
-ALTER TABLE public.invoice_validation_results OWNER TO postgres;
-
 --
--- Name: invoices; Type: TABLE; Schema: public; Owner: postgres
+-- Name: invoices; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoices (
@@ -461,10 +456,8 @@ CREATE TABLE public.invoices (
 );
 
 
-ALTER TABLE public.invoices OWNER TO postgres;
-
 --
--- Name: journal_entries; Type: TABLE; Schema: public; Owner: postgres
+-- Name: journal_entries; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.journal_entries (
@@ -477,10 +470,8 @@ CREATE TABLE public.journal_entries (
 );
 
 
-ALTER TABLE public.journal_entries OWNER TO postgres;
-
 --
--- Name: journal_entries_journal_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: journal_entries_journal_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.journal_entries_journal_id_seq
@@ -492,17 +483,15 @@ CREATE SEQUENCE public.journal_entries_journal_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.journal_entries_journal_id_seq OWNER TO postgres;
-
 --
--- Name: journal_entries_journal_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: journal_entries_journal_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.journal_entries_journal_id_seq OWNED BY public.journal_entries.journal_id;
 
 
 --
--- Name: journal_lines; Type: TABLE; Schema: public; Owner: postgres
+-- Name: journal_lines; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.journal_lines (
@@ -514,10 +503,8 @@ CREATE TABLE public.journal_lines (
 );
 
 
-ALTER TABLE public.journal_lines OWNER TO postgres;
-
 --
--- Name: journal_lines_line_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: journal_lines_line_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.journal_lines_line_id_seq
@@ -529,17 +516,15 @@ CREATE SEQUENCE public.journal_lines_line_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.journal_lines_line_id_seq OWNER TO postgres;
-
 --
--- Name: journal_lines_line_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: journal_lines_line_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.journal_lines_line_id_seq OWNED BY public.journal_lines.line_id;
 
 
 --
--- Name: matching_tolerance_config; Type: TABLE; Schema: public; Owner: postgres
+-- Name: matching_tolerance_config; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.matching_tolerance_config (
@@ -550,10 +535,8 @@ CREATE TABLE public.matching_tolerance_config (
 );
 
 
-ALTER TABLE public.matching_tolerance_config OWNER TO postgres;
-
 --
--- Name: organizations; Type: TABLE; Schema: public; Owner: postgres
+-- Name: organizations; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.organizations (
@@ -565,10 +548,8 @@ CREATE TABLE public.organizations (
 );
 
 
-ALTER TABLE public.organizations OWNER TO postgres;
-
 --
--- Name: paid_invoice_registry; Type: TABLE; Schema: public; Owner: postgres
+-- Name: paid_invoice_registry; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.paid_invoice_registry (
@@ -582,10 +563,8 @@ CREATE TABLE public.paid_invoice_registry (
 );
 
 
-ALTER TABLE public.paid_invoice_registry OWNER TO postgres;
-
 --
--- Name: paid_invoice_registry_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: paid_invoice_registry_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.paid_invoice_registry_id_seq
@@ -597,17 +576,15 @@ CREATE SEQUENCE public.paid_invoice_registry_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.paid_invoice_registry_id_seq OWNER TO postgres;
-
 --
--- Name: paid_invoice_registry_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: paid_invoice_registry_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.paid_invoice_registry_id_seq OWNED BY public.paid_invoice_registry.id;
 
 
 --
--- Name: payment_policy_config; Type: TABLE; Schema: public; Owner: postgres
+-- Name: payment_policy_config; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.payment_policy_config (
@@ -621,10 +598,8 @@ CREATE TABLE public.payment_policy_config (
 );
 
 
-ALTER TABLE public.payment_policy_config OWNER TO postgres;
-
 --
--- Name: purchase_orders; Type: TABLE; Schema: public; Owner: postgres
+-- Name: purchase_orders; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.purchase_orders (
@@ -638,10 +613,8 @@ CREATE TABLE public.purchase_orders (
 );
 
 
-ALTER TABLE public.purchase_orders OWNER TO postgres;
-
 --
--- Name: purchase_orders_po_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: purchase_orders_po_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.purchase_orders_po_id_seq
@@ -653,17 +626,15 @@ CREATE SEQUENCE public.purchase_orders_po_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.purchase_orders_po_id_seq OWNER TO postgres;
-
 --
--- Name: purchase_orders_po_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: purchase_orders_po_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.purchase_orders_po_id_seq OWNED BY public.purchase_orders.po_id;
 
 
 --
--- Name: sla_config; Type: TABLE; Schema: public; Owner: postgres
+-- Name: sla_config; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.sla_config (
@@ -677,10 +648,8 @@ CREATE TABLE public.sla_config (
 );
 
 
-ALTER TABLE public.sla_config OWNER TO postgres;
-
 --
--- Name: tax_rules_config; Type: TABLE; Schema: public; Owner: postgres
+-- Name: tax_rules_config; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.tax_rules_config (
@@ -691,10 +660,8 @@ CREATE TABLE public.tax_rules_config (
 );
 
 
-ALTER TABLE public.tax_rules_config OWNER TO postgres;
-
 --
--- Name: tax_rules_master; Type: TABLE; Schema: public; Owner: postgres
+-- Name: tax_rules_master; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.tax_rules_master (
@@ -708,10 +675,8 @@ CREATE TABLE public.tax_rules_master (
 );
 
 
-ALTER TABLE public.tax_rules_master OWNER TO postgres;
-
 --
--- Name: tax_rules_master_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: tax_rules_master_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.tax_rules_master_id_seq
@@ -723,17 +688,15 @@ CREATE SEQUENCE public.tax_rules_master_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.tax_rules_master_id_seq OWNER TO postgres;
-
 --
--- Name: tax_rules_master_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: tax_rules_master_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.tax_rules_master_id_seq OWNED BY public.tax_rules_master.id;
 
 
 --
--- Name: vendor_master; Type: TABLE; Schema: public; Owner: postgres
+-- Name: vendor_master; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.vendor_master (
@@ -750,10 +713,8 @@ CREATE TABLE public.vendor_master (
 );
 
 
-ALTER TABLE public.vendor_master OWNER TO postgres;
-
 --
--- Name: vendor_master_vendor_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: vendor_master_vendor_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.vendor_master_vendor_id_seq
@@ -765,17 +726,15 @@ CREATE SEQUENCE public.vendor_master_vendor_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.vendor_master_vendor_id_seq OWNER TO postgres;
-
 --
--- Name: vendor_master_vendor_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: vendor_master_vendor_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.vendor_master_vendor_id_seq OWNED BY public.vendor_master.vendor_id;
 
 
 --
--- Name: worker_completion_log; Type: TABLE; Schema: public; Owner: postgres
+-- Name: worker_completion_log; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.worker_completion_log (
@@ -786,87 +745,92 @@ CREATE TABLE public.worker_completion_log (
 );
 
 
-ALTER TABLE public.worker_completion_log OWNER TO postgres;
-
 --
--- Name: agent_reflection_log id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: agent_reflection_log id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.agent_reflection_log ALTER COLUMN id SET DEFAULT nextval('public.agent_reflection_log_id_seq'::regclass);
 
 
 --
--- Name: audit_event_log id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: audit_event_log id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.audit_event_log ALTER COLUMN id SET DEFAULT nextval('public.audit_event_log_id_seq'::regclass);
 
 
 --
--- Name: exception_review_decisions id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: exception_review_decisions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.exception_review_decisions ALTER COLUMN id SET DEFAULT nextval('public.exception_review_decisions_id_seq'::regclass);
 
 
 --
--- Name: failure_patterns id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: failure_patterns id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.failure_patterns ALTER COLUMN id SET DEFAULT nextval('public.failure_patterns_id_seq'::regclass);
 
 
 --
--- Name: invoice_approval_workflow workflow_id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: invoice_approval_workflow workflow_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_approval_workflow ALTER COLUMN workflow_id SET DEFAULT nextval('public.invoice_approval_workflow_workflow_id_seq'::regclass);
 
 
 --
--- Name: invoice_payment_schedule payment_id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: invoice_payment_approvals id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoice_payment_approvals ALTER COLUMN id SET DEFAULT nextval('public.invoice_payment_approvals_id_seq'::regclass);
+
+
+--
+-- Name: invoice_payment_schedule payment_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_payment_schedule ALTER COLUMN payment_id SET DEFAULT nextval('public.invoice_payment_schedule_payment_id_seq'::regclass);
 
 
 --
--- Name: journal_entries journal_id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: journal_entries journal_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.journal_entries ALTER COLUMN journal_id SET DEFAULT nextval('public.journal_entries_journal_id_seq'::regclass);
 
 
 --
--- Name: journal_lines line_id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: journal_lines line_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.journal_lines ALTER COLUMN line_id SET DEFAULT nextval('public.journal_lines_line_id_seq'::regclass);
 
 
 --
--- Name: paid_invoice_registry id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: paid_invoice_registry id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.paid_invoice_registry ALTER COLUMN id SET DEFAULT nextval('public.paid_invoice_registry_id_seq'::regclass);
 
 
 --
--- Name: tax_rules_master id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: tax_rules_master id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.tax_rules_master ALTER COLUMN id SET DEFAULT nextval('public.tax_rules_master_id_seq'::regclass);
 
 
 --
--- Name: vendor_master vendor_id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: vendor_master vendor_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.vendor_master ALTER COLUMN vendor_id SET DEFAULT nextval('public.vendor_master_vendor_id_seq'::regclass);
 
 
 --
--- Name: account_mapping account_mapping_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: account_mapping account_mapping_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.account_mapping
@@ -874,7 +838,7 @@ ALTER TABLE ONLY public.account_mapping
 
 
 --
--- Name: agent_action_log agent_action_log_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: agent_action_log agent_action_log_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.agent_action_log
@@ -882,7 +846,7 @@ ALTER TABLE ONLY public.agent_action_log
 
 
 --
--- Name: agent_reflection_log agent_reflection_log_invoice_org_state_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: agent_reflection_log agent_reflection_log_invoice_org_state_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.agent_reflection_log
@@ -890,7 +854,7 @@ ALTER TABLE ONLY public.agent_reflection_log
 
 
 --
--- Name: agent_reflection_log agent_reflection_log_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: agent_reflection_log agent_reflection_log_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.agent_reflection_log
@@ -898,7 +862,7 @@ ALTER TABLE ONLY public.agent_reflection_log
 
 
 --
--- Name: approval_config approval_config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: approval_config approval_config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.approval_config
@@ -906,7 +870,7 @@ ALTER TABLE ONLY public.approval_config
 
 
 --
--- Name: invoice_approval_workflow approval_unique_invoice_org; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_approval_workflow approval_unique_invoice_org; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_approval_workflow
@@ -914,7 +878,7 @@ ALTER TABLE ONLY public.invoice_approval_workflow
 
 
 --
--- Name: audit_event_log audit_event_log_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: audit_event_log audit_event_log_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.audit_event_log
@@ -922,7 +886,7 @@ ALTER TABLE ONLY public.audit_event_log
 
 
 --
--- Name: exception_review_decisions exception_review_decisions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: exception_review_decisions exception_review_decisions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.exception_review_decisions
@@ -930,7 +894,7 @@ ALTER TABLE ONLY public.exception_review_decisions
 
 
 --
--- Name: failure_patterns failure_patterns_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: failure_patterns failure_patterns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.failure_patterns
@@ -938,7 +902,7 @@ ALTER TABLE ONLY public.failure_patterns
 
 
 --
--- Name: invoice_approval_workflow invoice_approval_workflow_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_approval_workflow invoice_approval_workflow_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_approval_workflow
@@ -946,7 +910,7 @@ ALTER TABLE ONLY public.invoice_approval_workflow
 
 
 --
--- Name: invoice_compliance_results invoice_compliance_results_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_compliance_results invoice_compliance_results_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_compliance_results
@@ -954,7 +918,7 @@ ALTER TABLE ONLY public.invoice_compliance_results
 
 
 --
--- Name: invoice_extracted_data invoice_extracted_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_extracted_data invoice_extracted_data_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_extracted_data
@@ -962,7 +926,7 @@ ALTER TABLE ONLY public.invoice_extracted_data
 
 
 --
--- Name: invoice_fraud_scores invoice_fraud_scores_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_fraud_scores invoice_fraud_scores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_fraud_scores
@@ -970,7 +934,23 @@ ALTER TABLE ONLY public.invoice_fraud_scores
 
 
 --
--- Name: invoice_payment_schedule invoice_payment_schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_payment_approvals invoice_payment_approvals_invoice_org_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoice_payment_approvals
+    ADD CONSTRAINT invoice_payment_approvals_invoice_org_unique UNIQUE (invoice_id, organization_id);
+
+
+--
+-- Name: invoice_payment_approvals invoice_payment_approvals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoice_payment_approvals
+    ADD CONSTRAINT invoice_payment_approvals_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: invoice_payment_schedule invoice_payment_schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_payment_schedule
@@ -978,7 +958,7 @@ ALTER TABLE ONLY public.invoice_payment_schedule
 
 
 --
--- Name: invoice_payment_schedule invoice_payment_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_payment_schedule invoice_payment_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_payment_schedule
@@ -986,7 +966,7 @@ ALTER TABLE ONLY public.invoice_payment_schedule
 
 
 --
--- Name: invoice_po_matching_results invoice_po_matching_results_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_po_matching_results invoice_po_matching_results_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_po_matching_results
@@ -994,7 +974,7 @@ ALTER TABLE ONLY public.invoice_po_matching_results
 
 
 --
--- Name: invoice_risk_assessment invoice_risk_assessment_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_risk_assessment invoice_risk_assessment_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_risk_assessment
@@ -1002,7 +982,7 @@ ALTER TABLE ONLY public.invoice_risk_assessment
 
 
 --
--- Name: invoice_state_machine invoice_state_machine_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_state_machine invoice_state_machine_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_state_machine
@@ -1010,7 +990,7 @@ ALTER TABLE ONLY public.invoice_state_machine
 
 
 --
--- Name: invoice_validation_results invoice_validation_results_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_validation_results invoice_validation_results_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_validation_results
@@ -1018,7 +998,7 @@ ALTER TABLE ONLY public.invoice_validation_results
 
 
 --
--- Name: invoices invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoices invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoices
@@ -1026,7 +1006,15 @@ ALTER TABLE ONLY public.invoices
 
 
 --
--- Name: journal_entries journal_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: journal_entries journal_entries_invoice_org_type_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.journal_entries
+    ADD CONSTRAINT journal_entries_invoice_org_type_unique UNIQUE (invoice_id, organization_id, entry_type);
+
+
+--
+-- Name: journal_entries journal_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.journal_entries
@@ -1034,7 +1022,7 @@ ALTER TABLE ONLY public.journal_entries
 
 
 --
--- Name: journal_lines journal_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: journal_lines journal_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.journal_lines
@@ -1042,7 +1030,7 @@ ALTER TABLE ONLY public.journal_lines
 
 
 --
--- Name: matching_tolerance_config matching_tolerance_config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: matching_tolerance_config matching_tolerance_config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.matching_tolerance_config
@@ -1050,7 +1038,7 @@ ALTER TABLE ONLY public.matching_tolerance_config
 
 
 --
--- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.organizations
@@ -1058,7 +1046,7 @@ ALTER TABLE ONLY public.organizations
 
 
 --
--- Name: paid_invoice_registry paid_invoice_registry_organization_id_invoice_number_vendor_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: paid_invoice_registry paid_invoice_registry_organization_id_invoice_number_vendor_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.paid_invoice_registry
@@ -1066,7 +1054,7 @@ ALTER TABLE ONLY public.paid_invoice_registry
 
 
 --
--- Name: paid_invoice_registry paid_invoice_registry_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: paid_invoice_registry paid_invoice_registry_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.paid_invoice_registry
@@ -1074,7 +1062,7 @@ ALTER TABLE ONLY public.paid_invoice_registry
 
 
 --
--- Name: payment_policy_config payment_policy_config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: payment_policy_config payment_policy_config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.payment_policy_config
@@ -1082,7 +1070,7 @@ ALTER TABLE ONLY public.payment_policy_config
 
 
 --
--- Name: purchase_orders purchase_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: purchase_orders purchase_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.purchase_orders
@@ -1090,7 +1078,7 @@ ALTER TABLE ONLY public.purchase_orders
 
 
 --
--- Name: sla_config sla_config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: sla_config sla_config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.sla_config
@@ -1098,7 +1086,7 @@ ALTER TABLE ONLY public.sla_config
 
 
 --
--- Name: tax_rules_config tax_rules_config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: tax_rules_config tax_rules_config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.tax_rules_config
@@ -1106,7 +1094,7 @@ ALTER TABLE ONLY public.tax_rules_config
 
 
 --
--- Name: tax_rules_master tax_rules_master_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: tax_rules_master tax_rules_master_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.tax_rules_master
@@ -1114,7 +1102,7 @@ ALTER TABLE ONLY public.tax_rules_master
 
 
 --
--- Name: vendor_master vendor_master_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: vendor_master vendor_master_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.vendor_master
@@ -1122,7 +1110,7 @@ ALTER TABLE ONLY public.vendor_master
 
 
 --
--- Name: worker_completion_log worker_completion_log_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: worker_completion_log worker_completion_log_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.worker_completion_log
@@ -1130,56 +1118,63 @@ ALTER TABLE ONLY public.worker_completion_log
 
 
 --
--- Name: idx_agent_action_log_errors; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_agent_action_log_errors; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_agent_action_log_errors ON public.agent_action_log USING btree (invoice_id, organization_id, state_name, action) WHERE ((action = 'ERROR'::text) AND (success = false));
 
 
 --
--- Name: idx_invoice_approval_org; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_invoice_approval_org; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_invoice_approval_org ON public.invoice_approval_workflow USING btree (invoice_id, organization_id);
 
 
 --
--- Name: idx_invoice_payment_org; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_invoice_payment_org; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_invoice_payment_org ON public.invoice_payment_schedule USING btree (invoice_id, organization_id);
 
 
 --
--- Name: idx_state_machine_state_org; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_payment_approvals_invoice; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_payment_approvals_invoice ON public.invoice_payment_approvals USING btree (invoice_id, organization_id, processed);
+
+
+--
+-- Name: idx_state_machine_state_org; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_state_machine_state_org ON public.invoice_state_machine USING btree (current_state, organization_id);
 
 
 --
--- Name: idx_vendor_email; Type: INDEX; Schema: public; Owner: postgres
+-- Name: idx_vendor_email; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX idx_vendor_email ON public.vendor_master USING btree (email);
 
 
 --
--- Name: po_number_per_org; Type: INDEX; Schema: public; Owner: postgres
+-- Name: po_number_per_org; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX po_number_per_org ON public.purchase_orders USING btree (organization_id, po_number);
 
 
 --
--- Name: vendor_tax_id_per_org; Type: INDEX; Schema: public; Owner: postgres
+-- Name: vendor_tax_id_per_org; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX vendor_tax_id_per_org ON public.vendor_master USING btree (organization_id, tax_id);
 
 
 --
--- Name: approval_config approval_config_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: approval_config approval_config_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.approval_config
@@ -1187,7 +1182,7 @@ ALTER TABLE ONLY public.approval_config
 
 
 --
--- Name: audit_event_log audit_event_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: audit_event_log audit_event_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.audit_event_log
@@ -1195,7 +1190,7 @@ ALTER TABLE ONLY public.audit_event_log
 
 
 --
--- Name: exception_review_decisions exception_review_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: exception_review_decisions exception_review_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.exception_review_decisions
@@ -1203,7 +1198,7 @@ ALTER TABLE ONLY public.exception_review_decisions
 
 
 --
--- Name: invoice_approval_workflow invoice_approval_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_approval_workflow invoice_approval_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_approval_workflow
@@ -1211,7 +1206,7 @@ ALTER TABLE ONLY public.invoice_approval_workflow
 
 
 --
--- Name: invoice_compliance_results invoice_compliance_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_compliance_results invoice_compliance_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_compliance_results
@@ -1219,7 +1214,7 @@ ALTER TABLE ONLY public.invoice_compliance_results
 
 
 --
--- Name: invoice_payment_schedule invoice_payment_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_payment_schedule invoice_payment_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_payment_schedule
@@ -1227,7 +1222,7 @@ ALTER TABLE ONLY public.invoice_payment_schedule
 
 
 --
--- Name: invoice_po_matching_results invoice_po_matching_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_po_matching_results invoice_po_matching_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_po_matching_results
@@ -1235,7 +1230,7 @@ ALTER TABLE ONLY public.invoice_po_matching_results
 
 
 --
--- Name: invoice_risk_assessment invoice_risk_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_risk_assessment invoice_risk_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_risk_assessment
@@ -1243,7 +1238,7 @@ ALTER TABLE ONLY public.invoice_risk_assessment
 
 
 --
--- Name: invoice_state_machine invoice_state_machine_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_state_machine invoice_state_machine_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_state_machine
@@ -1251,7 +1246,7 @@ ALTER TABLE ONLY public.invoice_state_machine
 
 
 --
--- Name: invoice_validation_results invoice_validation_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_validation_results invoice_validation_invoice_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_validation_results
@@ -1259,7 +1254,7 @@ ALTER TABLE ONLY public.invoice_validation_results
 
 
 --
--- Name: invoice_validation_results invoice_validation_results_vendor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoice_validation_results invoice_validation_results_vendor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoice_validation_results
@@ -1267,7 +1262,7 @@ ALTER TABLE ONLY public.invoice_validation_results
 
 
 --
--- Name: invoices invoices_org_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: invoices invoices_org_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.invoices
@@ -1275,7 +1270,7 @@ ALTER TABLE ONLY public.invoices
 
 
 --
--- Name: journal_lines journal_lines_journal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: journal_lines journal_lines_journal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.journal_lines
@@ -1283,7 +1278,7 @@ ALTER TABLE ONLY public.journal_lines
 
 
 --
--- Name: matching_tolerance_config matching_tolerance_config_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: matching_tolerance_config matching_tolerance_config_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.matching_tolerance_config
@@ -1291,7 +1286,7 @@ ALTER TABLE ONLY public.matching_tolerance_config
 
 
 --
--- Name: payment_policy_config payment_policy_config_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: payment_policy_config payment_policy_config_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.payment_policy_config
@@ -1299,7 +1294,7 @@ ALTER TABLE ONLY public.payment_policy_config
 
 
 --
--- Name: purchase_orders purchase_orders_vendor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: purchase_orders purchase_orders_vendor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.purchase_orders
@@ -1307,7 +1302,7 @@ ALTER TABLE ONLY public.purchase_orders
 
 
 --
--- Name: tax_rules_config tax_rules_config_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: tax_rules_config tax_rules_config_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.tax_rules_config
@@ -1318,5 +1313,5 @@ ALTER TABLE ONLY public.tax_rules_config
 -- PostgreSQL database dump complete
 --
 
-\unrestrict f3iuOP5hMzdzDx4nXknKqQ1wx5MPd1jcKXERRc8lhNJNFgzSeXKtntFu3ddUpu8
+\unrestrict yg9l2eCALJQRZ0GhhJgGAqCrXgsLg7JkysyguSlTUx1SBT2zcrIEvsU5C1qg8Pa
 
