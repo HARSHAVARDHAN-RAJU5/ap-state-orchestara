@@ -14,6 +14,8 @@ Tags: `[python]` `[node]` `[db]` `[graph]` `[env]` `[workflow]` `[user]`
 
 ## Active
 
+- [workflow] 2026-09-22 · seen 1 — **Never tell the user to `git reset` when `git rm --cached` untracking is staged** — the reset drops the removals and `.gitignore` doesn't untrack already-tracked files, so they silently stay in git. When suggesting a commit split, stage each group explicitly (including `git rm --cached` steps) instead of reset + `add -A`. (evidence: commit bdadaf3 had 12 files instead of ~4,400 deletions; fixed in 2e4ab7b)
+
 - [db] 2026-09-22 · seen 1 — **Check the live DB before calling a column/table "missing".** `db/schema.sql` was stale (no `review_cycle`, no `invoice_payment_approvals`) and nearly led to a false bug report. Query `information_schema.columns` via `python/venv/Scripts/python.exe -B` with `from db import get_connection`.
 - [env] 2026-09-22 · seen 1 — **`node_modules` may not be installed** on this machine even though `package-lock.json` exists — run `npm ci` before any Node check.
 - [env] 2026-09-22 · seen 1 — **Use `python/venv/Scripts/python.exe -B` directly** for quick checks (langgraph 1.1.3 installed). Shell is Windows with Git Bash; use `curl.exe` in PowerShell, not the `curl` alias.

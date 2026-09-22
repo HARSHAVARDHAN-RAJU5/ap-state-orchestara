@@ -5,8 +5,9 @@ deterministic state machine (duplicate → validation → PO matching → fraud 
 → approval → accounting). **LLMs are workers, not decision makers**: routing is decided only by
 worker return values and the state machine, and every transition must be auditable.
 
-Branch `updated_version` = migration of the orchestrator from Node.js to **Python + LangGraph**.
-`main` holds the old fully-Node pipeline. Don't port changes between branches unless asked.
+Branch `main` = current code: orchestrator migrated from Node.js to **Python + LangGraph**.
+`legacy-node` holds the old fully-Node pipeline (reference only — `git show legacy-node:<path>` to see
+how something used to work). `updated_version` is merged and retired. Don't port changes to `legacy-node`.
 
 ## Architecture (two runtimes, one Postgres, one Redis stream)
 
@@ -68,7 +69,7 @@ For graph-routing changes, test the real `build_graph()` with the node functions
 
 ## Known gaps (as of 2026-09-22 — fix only when asked)
 - No retry limit: a graph exception just bumps `retry_count` forever (Node `ReflectionService` circuit breaker not ported).
-- Exception auto-resolve by fraud score / SLA escalation from `main`'s ExceptionReviewAgent not ported — EXCEPTION_REVIEW waits for a human.
+- Exception auto-resolve by fraud score / SLA escalation from `legacy-node`'s ExceptionReviewAgent not ported — EXCEPTION_REVIEW waits for a human.
 - The DB password was committed in git history before 2026-09-22 (removed from code since). Never put secrets in code; use `.env`.
 - Uploaded PDFs go to `modules/step1-intake/storage/invoices/` (git-ignored) — don't commit them.
 
@@ -77,7 +78,7 @@ For graph-routing changes, test the real `build_graph()` with the node functions
 - Python: modules import siblings as top-level (`from db import ...`) because `orchestrator.py` puts `python/` on `sys.path`. Run from `python/`.
 - Open/close a connection per query is the current style; match it unless refactoring on request.
 - Keep comments short, lower-case, explaining *why* — match surrounding files.
-- Git: work on `updated_version`; commit only when asked.
+- Git: work on `main`; commit only when asked (the user commits themselves).
 
 ## Self-learning loop
 This project keeps a running log of lessons learned in `.claude/LEARNINGS.md`, imported below so

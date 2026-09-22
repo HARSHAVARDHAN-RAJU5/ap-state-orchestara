@@ -1,14 +1,13 @@
-# Orchestara — LangGraph Migration Branch
+# Orchestara — AP Invoice Orchestration
 
-> **Branch**: `updated_version`  
-> **Status**: Active migration — Python + LangGraph orchestration engine replacing the Node.js orchestrator.  
-> For the original fully-Node.js pipeline see the `main` branch.
+> **Branch**: `main` — Python + LangGraph orchestration engine with a Node.js API.  
+> The original fully-Node.js pipeline is preserved on the `legacy-node` branch.
 
 ---
 
-## What This Branch Is
+## What This Is
 
-This branch migrates the Orchestara orchestration engine from Node.js to Python + LangGraph.
+Orchestara's orchestration engine, migrated from Node.js to Python + LangGraph.
 
 The Node.js side (Express API, file upload, human decision endpoints, Redis event emission) stays. Everything from invoice processing onwards — PDF parsing, LLM extraction, all workers, state routing — runs in Python.
 
@@ -18,13 +17,13 @@ Node.js handles intake and human decisions. Python picks up every event from Red
 - ✅ Full pipeline: upload → extraction → checks → payment scheduling → approval → accounting → payment → `COMPLETED`
 - ✅ Human decisions (payment approval, exception review) picked up by Python workers
 - ✅ Every state transition written to `audit_event_log`
-- ⏳ Not yet ported from `main`: exception auto-resolve, vendor notifications, retry-limit circuit breaker (see [Pending](#whats-still-pending-in-this-branch))
+- ⏳ Not yet ported from `legacy-node`: exception auto-resolve, vendor notifications, retry-limit circuit breaker (see [Pending](#whats-still-pending))
 
 ---
 
-## What Changed From `main`
+## What Changed From `legacy-node`
 
-| Layer | `main` branch | `updated_version` branch |
+| Layer | `legacy-node` (old) | `main` (current) |
 |---|---|---|
 | API + File Upload | Node.js + Express | Node.js + Express (unchanged) |
 | PDF Parsing + LLM Extraction | Node.js (pdfjs + Ollama) | Python (pdfplumber + Ollama) |
@@ -34,7 +33,7 @@ Node.js handles intake and human decisions. Python picks up every event from Red
 | State Definition | Implicit JS objects | `TypedDict` via `graph/state.py` |
 | Agent Layer | `agent/` folder (JS) | Removed — nodes call workers directly |
 
-`orchestrator.js`, `workers/` and `agent/` do not exist on this branch.
+`orchestrator.js`, `workers/` and `agent/` no longer exist — see `legacy-node` for them.
 
 ---
 
@@ -291,10 +290,10 @@ TRUNCATE TABLE invoices CASCADE;
 
 ---
 
-## What's Still Pending In This Branch
+## What's Still Pending
 
 - [x] PendingApprovalWorker and ExceptionReviewWorker in Python (human decisions)
-- [ ] Exception auto-resolve by fraud score + SLA escalation (from `main`'s ExceptionReviewAgent)
+- [ ] Exception auto-resolve by fraud score + SLA escalation (from `legacy-node`'s ExceptionReviewAgent)
 - [ ] Wire NotificationWorker in Python (vendor emails via Resend)
 - [ ] Python equivalent of ReflectionService circuit breaker (retry limit → EXCEPTION_REVIEW)
 - [ ] Python equivalent of workerIdempotency
@@ -320,8 +319,9 @@ The architecture principle stays the same: LLMs are workers, not decision makers
 
 | Branch | Purpose |
 |---|---|
-| `main` | Original fully Node.js pipeline |
-| `updated_version` | This branch — Python + LangGraph migration |
+| `main` | **Current** — Python + LangGraph engine, Node.js API. Work here. |
+| `legacy-node` | Original fully Node.js pipeline (the old `main`, kept for reference) |
+| `updated_version` | Migration branch, merged into `main` — no longer used |
 | `clg-project` | Clean college presentation version |
 
 ---
