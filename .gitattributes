@@ -1,0 +1,5 @@
+# keep github's language bar focused on the python/langgraph orchestrator
+# static dashboard html is not core code
+*.html linguist-vendored
+# schema dumps, not hand-written
+*.sql linguist-vendored
