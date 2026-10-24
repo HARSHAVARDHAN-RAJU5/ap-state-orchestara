@@ -4,7 +4,7 @@ from graph.state import InvoiceState
 from graph.nodes import (
     intake_node, duplicate_node, validation_node,
     matching_node, fraud_node, compliance_node,
-    payment_node, pending_approval_node,
+    contract_check_node, payment_node, pending_approval_node,
     exception_review_node, accounting_node
 )
 
@@ -52,6 +52,7 @@ def build_graph():
         "MATCHING": matching_node,
         "FRAUD_SCREENING": fraud_node,
         "COMPLIANCE": compliance_node,
+        "CONTRACT_CHECK": contract_check_node,
         "PAYMENT_READY": payment_node,
         "PENDING_APPROVAL": pending_approval_node,
         "EXCEPTION_REVIEW": exception_review_node,

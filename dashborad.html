@@ -233,7 +233,7 @@ td{padding:16px 20px;font-size:13.5px;color:var(--text2);white-space:nowrap;}
 <div class="toast" id="toast"></div>
 <script>
 const API="http://localhost:3000/api/dashboard",RAPI="http://localhost:3000/api/review",ORG="ORG-1";
-const STATES=["RECEIVED","STRUCTURED","DUPLICATE_CHECK","VALIDATING","MATCHING","COMPLIANCE","PAYMENT_READY","PENDING_APPROVAL","EXCEPTION_REVIEW","WAITING_INFO","APPROVED","ACCOUNTING","COMPLETED","BLOCKED"];
+const STATES=["RECEIVED","STRUCTURED","DUPLICATE_CHECK","VALIDATING","MATCHING","COMPLIANCE","CONTRACT_CHECK","PAYMENT_READY","PENDING_APPROVAL","EXCEPTION_REVIEW","WAITING_INFO","APPROVED","ACCOUNTING","COMPLETED","BLOCKED"];
 let curPage="overview";
 const fmt={a:v=>v?"\u20b9"+parseFloat(v).toLocaleString("en-IN",{maximumFractionDigits:2}):"--",d:v=>v?new Date(v).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"--",dt:v=>{if(!v)return"--";const d=new Date(v);return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+", "+d.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});},id:v=>v?(v.length>14?v.slice(0,8)+"..."+v.slice(-4):v):"--",dur:v=>{const h=parseFloat(v)||0;if(!h)return"--";if(h<1)return"< 1h";if(h<24)return Math.round(h)+"h";return Math.round(h/24)+"d";}};
 function bdg(s){const c=["COMPLETED","BLOCKED","EXCEPTION_REVIEW","WAITING_INFO","RECEIVED"].includes(s)?`b-${s}`:"b-default";return`<span class="badge ${c}">${s.replace(/_/g," ")}</span>`;}

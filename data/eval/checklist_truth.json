@@ -1,0 +1,59 @@
+{
+  "description": "SAMPLE DATA - ground truth for the contract requirements checklist (rag.requirements build). Written from contract_chunks.content before any run. Used only by rag.eval_checklist.",
+  "organization_id": "ORG-1",
+  "matching": "a built requirement matches an expected one when it is from the same document, its section_title starts with the same section number, and its quote contains one of the key phrases (case-insensitive, after _norm)",
+  "out_of_scope": "prices, payment deadlines and charge amounts are checked by Layer 1 and must NOT appear in the checklist",
+  "documents": [
+    {"doc_name": "Supply Agreement: Tech Supplies Pvt Ltd (VEN-001)", "vendor_id": "VEN-001",
+     "expected": [
+       {"key": "VEN-001 §4 po number", "section": "4", "phrases": ["purchase order number"], "needs": "invoice_text"},
+       {"key": "VEN-001 §4 reference vendor id", "section": "4", "phrases": ["reference ven-001"], "needs": "invoice_text"},
+       {"key": "VEN-001 §6 taxes separately", "section": "6", "phrases": ["shown separately"], "needs": "invoice_text"}
+     ],
+     "acceptable_extras": [
+       {"section": "5", "phrases": ["may not bill any separate freight"], "why": "a charge rule (Layer 1), but readable as 'invoice must not contain a freight line'"}
+     ]},
+    {"doc_name": "Supply Agreement: Bharat Office Mart (VEN-002)", "vendor_id": "VEN-002",
+     "expected": [
+       {"key": "VEN-002 §4 po number", "section": "4", "phrases": ["purchase order number"], "needs": "invoice_text"},
+       {"key": "VEN-002 §4 reference vendor id", "section": "4", "phrases": ["reference ven-002"], "needs": "invoice_text"},
+       {"key": "VEN-002 §6 taxes separately", "section": "6", "phrases": ["shown separately"], "needs": "invoice_text"}
+     ],
+     "acceptable_extras": []},
+    {"doc_name": "Services Agreement: Swift Logistics (VEN-003)", "vendor_id": "VEN-003",
+     "expected": [
+       {"key": "VEN-003 §4 reference vendor id", "section": "4", "phrases": ["reference ven-003"], "needs": "invoice_text"},
+       {"key": "VEN-003 §4 trips with distance", "section": "4", "phrases": ["trips completed", "distance for each"], "needs": "invoice_text"},
+       {"key": "VEN-003 §5 freight separate line", "section": "5", "phrases": ["separate line"], "needs": "invoice_text"},
+       {"key": "VEN-003 §6 taxes separately", "section": "6", "phrases": ["shown separately"], "needs": "invoice_text"}
+     ],
+     "acceptable_extras": [
+       {"section": "3", "phrases": ["distance charged shall be the distance travelled"], "why": "pricing basis, borderline invoice-content rule"}
+     ]},
+    {"doc_name": "Consulting Agreement: CloudNine Consulting (VEN-004)", "vendor_id": "VEN-004",
+     "expected": [
+       {"key": "VEN-004 §4 reference vendor id", "section": "4", "phrases": ["reference ven-004"], "needs": "invoice_text"},
+       {"key": "VEN-004 §4 timesheet", "section": "4", "phrases": ["timesheet"], "needs": "attachment"},
+       {"key": "VEN-004 §5 travel receipts", "section": "5", "phrases": ["receipts"], "needs": "attachment"},
+       {"key": "VEN-004 §6 taxes separately", "section": "6", "phrases": ["shown separately"], "needs": "invoice_text"}
+     ],
+     "acceptable_extras": [
+       {"section": "3", "phrases": ["only hours actually worked and recorded may be billed"], "why": "billing rule, overlaps the timesheet requirement"}
+     ]},
+    {"doc_name": "Facility Services Agreement: GreenLeaf Facility Services (VEN-005)", "vendor_id": "VEN-005",
+     "expected": [
+       {"key": "VEN-005 §4 one invoice per month", "section": "4", "phrases": ["one invoice per month"], "needs": "history"},
+       {"key": "VEN-005 §4 reference vendor id", "section": "4", "phrases": ["referencing ven-005", "one invoice per month referencing"], "needs": "invoice_text"},
+       {"key": "VEN-005 §6 taxes separately", "section": "6", "phrases": ["shown separately"], "needs": "invoice_text"}
+     ],
+     "acceptable_extras": [
+       {"section": "3", "phrases": ["no additional charges of any kind may be billed"], "why": "a charge rule (Layer 1)"}
+     ]},
+    {"doc_name": "Accounts Payable Payment Policy - Orchestara Demo Pvt Ltd", "vendor_id": null,
+     "expected": [],
+     "acceptable_extras": []},
+    {"doc_name": "Procurement Policy - Orchestara Demo Pvt Ltd", "vendor_id": null,
+     "expected": [],
+     "acceptable_extras": []}
+  ]
+}

@@ -1,9 +1,35 @@
 from db import get_connection
 from policy_engine import load_config
+from llm import generate_json
 import pdfplumber
-import requests
 import json
-import os
+
+
+def to_number(value):
+    # null stays null: a missing quantity / price must not turn into 0
+    if value is None or value == "":
+        return None
+    try:
+        return float(str(value).replace(",", "").replace("₹", "").strip())
+    except ValueError:
+        return None
+
+
+def clean_line_items(items):
+    if not isinstance(items, list):
+        return []
+    cleaned = []
+    for item in items:
+        if not isinstance(item, dict) or not item.get("description"):
+            continue
+        cleaned.append({
+            "description": str(item["description"]).strip(),
+            "quantity": to_number(item.get("quantity")),
+            "unit_price": to_number(item.get("unit_price")),
+            "amount": to_number(item.get("amount")),
+        })
+    return cleaned
+
 
 def run(state: dict) -> dict:
     invoice_id = state["invoice_id"]
@@ -49,7 +75,7 @@ def run(state: dict) -> dict:
     if len(text.strip()) < 20:
         return {**state, "next_state": None, "reason": "PDF text too short or empty"}
 
-    # send to llama3
+    # send to the llm (gemini by default, see llm.py)
     prompt = f"""
 You are an invoice extraction engine.
 Extract these fields from the invoice text below and return ONLY valid JSON, no explanation:
@@ -64,8 +90,13 @@ Extract these fields from the invoice text below and return ONLY valid JSON, no 
 - due_date
 - po_number
 - expense_category (one of: SOFTWARE, OFFICE_SUPPLIES, TRAVEL, UTILITIES, GENERAL)
+- line_items: a list with one object per billed row, in the order shown on the invoice.
+  Each object has: description, quantity, unit_price, amount.
+  Include every charge row (products, services, freight, delivery, handling, fees).
+  Do not include subtotal, tax or total rows.
 
 If a field is missing return null.
+If a line item's quantity or unit_price is not printed on the invoice, return null for it - do not calculate or guess.
 Remove currency symbols from numbers.
 
 Invoice Text:
@@ -73,26 +104,11 @@ Invoice Text:
 """
 
     try:
-        response = requests.post(
-            f"{os.getenv('OLLAMA_URL', 'http://127.0.0.1:11434')}/api/generate",
-            json={"model": os.getenv("OLLAMA_MODEL", "llama3"), "prompt": prompt, "stream": False},
-            timeout=60
-        )
-        raw = response.json()["response"]
-    except Exception as e:
-        return {**state, "next_state": None, "reason": f"LLM call failed: {str(e)}"}
-
-    # clean and parse llm response
-    clean = raw.strip()
-    if "```" in clean:
-        clean = clean.split("```")[1]
-        if clean.startswith("json"):
-            clean = clean[4:]
-
-    try:
-        data = json.loads(clean)
+        data = generate_json(prompt)
     except json.JSONDecodeError:
         return {**state, "next_state": None, "reason": "LLM returned invalid JSON"}
+    except Exception as e:
+        return {**state, "next_state": None, "reason": f"LLM call failed: {str(e)}"}
 
     # fallback defaults
     if not data.get("expense_category"):
@@ -103,21 +119,25 @@ Invoice Text:
         if data.get(field):
             data[field] = float(str(data[field]).replace(",", "").replace("₹", ""))
 
+    data["line_items"] = clean_line_items(data.get("line_items"))
+
     # save to DB
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
         """
         INSERT INTO invoice_extracted_data
-            (invoice_id, organization_id, data, extraction_status, extracted_at)
-        VALUES (%s, %s, %s, %s, NOW())
+            (invoice_id, organization_id, data, raw_text, extraction_status, extracted_at)
+        VALUES (%s, %s, %s, %s, %s, NOW())
         ON CONFLICT (invoice_id, organization_id)
         DO UPDATE SET
             data = EXCLUDED.data,
+            raw_text = EXCLUDED.raw_text,
             extraction_status = EXCLUDED.extraction_status,
             extracted_at = NOW()
         """,
-        (invoice_id, organization_id, json.dumps(data), "SUCCESS")
+        # raw text kept for the contract requirement check (what the vendor actually wrote)
+        (invoice_id, organization_id, json.dumps(data), text, "SUCCESS")
     )
     conn.commit()
     cur.close()

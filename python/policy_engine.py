@@ -49,5 +49,10 @@ def load_config(organization_id):
         "payment": {
             "default_due_days": payment_row[0] if payment_row else 30,
             "default_payment_method": payment_row[1] if payment_row else "BANK_TRANSFER"
+        },
+        # same defaults for every org until the eval tells us better values
+        "contract_check": {
+            "min_confidence": 0.80,
+            "min_similarity": 0.50
         }
     }

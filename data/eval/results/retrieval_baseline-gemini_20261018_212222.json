@@ -1,0 +1,244 @@
+{
+  "label": "baseline-gemini",
+  "embed_model": "gemini:gemini-embedding-001",
+  "k": 3,
+  "hit_rate": 1.0,
+  "mrr": 0.7543859649122806,
+  "hits": 19,
+  "scored": 19,
+  "by_check": {
+    "payment_terms": {
+      "hits": 7,
+      "total": 7
+    },
+    "unit_price": {
+      "hits": 7,
+      "total": 7
+    },
+    "extra_charges": {
+      "hits": 5,
+      "total": 5
+    }
+  },
+  "questions": [
+    {
+      "id": 1,
+      "status": "hit",
+      "rank": 3,
+      "query": "payment terms: number of days after the invoice date within which payment is due",
+      "top3": [
+        "POLICY \u00a74 (0.73)",
+        "POLICY \u00a73 (0.73)",
+        "VEN-002 \u00a74 (0.73)"
+      ]
+    },
+    {
+      "id": 2,
+      "status": "hit",
+      "rank": 1,
+      "query": "payment terms: number of days after the invoice date within which payment is due",
+      "top3": [
+        "VEN-001 \u00a74 (0.74)",
+        "POLICY \u00a74 (0.73)",
+        "POLICY \u00a73 (0.73)"
+      ]
+    },
+    {
+      "id": 3,
+      "status": "hit",
+      "rank": 3,
+      "query": "payment terms: number of days after the invoice date within which payment is due",
+      "top3": [
+        "POLICY \u00a74 (0.73)",
+        "POLICY \u00a73 (0.73)",
+        "VEN-004 \u00a74 (0.73)"
+      ]
+    },
+    {
+      "id": 4,
+      "status": "hit",
+      "rank": 3,
+      "query": "payment terms: number of days after the invoice date within which payment is due",
+      "top3": [
+        "POLICY \u00a74 (0.73)",
+        "POLICY \u00a73 (0.73)",
+        "VEN-004 \u00a74 (0.73)"
+      ]
+    },
+    {
+      "id": 5,
+      "status": "hit",
+      "rank": 1,
+      "query": "payment terms: number of days after the invoice date within which payment is due",
+      "top3": [
+        "VEN-003 \u00a74 (0.73)",
+        "POLICY \u00a74 (0.73)",
+        "POLICY \u00a73 (0.73)"
+      ]
+    },
+    {
+      "id": 6,
+      "status": "hit",
+      "rank": 1,
+      "query": "payment terms: number of days after the invoice date within which payment is due",
+      "top3": [
+        "VEN-003 \u00a74 (0.73)",
+        "POLICY \u00a74 (0.73)",
+        "POLICY \u00a73 (0.73)"
+      ]
+    },
+    {
+      "id": 7,
+      "status": "hit",
+      "rank": 3,
+      "query": "payment terms: number of days after the invoice date within which payment is due",
+      "top3": [
+        "POLICY \u00a74 (0.73)",
+        "POLICY \u00a73 (0.73)",
+        "VEN-005 \u00a74 (0.72)"
+      ]
+    },
+    {
+      "id": 8,
+      "status": "hit",
+      "rank": 1,
+      "query": "agreed contract price per unit for Laptop",
+      "top3": [
+        "VEN-001 \u00a73 (0.79)",
+        "VEN-001 \u00a72 (0.71)",
+        "VEN-001 \u00a75 (0.68)"
+      ]
+    },
+    {
+      "id": 9,
+      "status": "hit",
+      "rank": 1,
+      "query": "agreed contract price per unit for Laptop",
+      "top3": [
+        "VEN-001 \u00a73 (0.79)",
+        "VEN-001 \u00a72 (0.71)",
+        "VEN-001 \u00a75 (0.68)"
+      ]
+    },
+    {
+      "id": 10,
+      "status": "hit",
+      "rank": 1,
+      "query": "agreed contract price per unit for A4 paper ream",
+      "top3": [
+        "VEN-002 \u00a73 (0.78)",
+        "VEN-002 \u00a72 (0.67)",
+        "VEN-002 \u00a71 (0.66)"
+      ]
+    },
+    {
+      "id": 11,
+      "status": "hit",
+      "rank": 1,
+      "query": "agreed contract price per unit for Senior consultant hours",
+      "top3": [
+        "VEN-004 \u00a73 (0.78)",
+        "VEN-004 \u00a72 (0.68)",
+        "VEN-004 \u00a71 (0.68)"
+      ]
+    },
+    {
+      "id": 12,
+      "status": "hit",
+      "rank": 1,
+      "query": "agreed contract price per unit for Junior consultant hours",
+      "top3": [
+        "VEN-004 \u00a73 (0.77)",
+        "VEN-004 \u00a72 (0.68)",
+        "VEN-004 \u00a71 (0.68)"
+      ]
+    },
+    {
+      "id": 13,
+      "status": "hit",
+      "rank": 1,
+      "query": "agreed contract price per unit for Office cleaning - monthly fee",
+      "top3": [
+        "VEN-005 \u00a73 (0.76)",
+        "VEN-005 \u00a72 (0.71)",
+        "VEN-005 \u00a75 (0.70)"
+      ]
+    },
+    {
+      "id": 14,
+      "status": "hit",
+      "rank": 1,
+      "query": "agreed contract price per unit for Transport charges (per km)",
+      "top3": [
+        "VEN-003 \u00a73 (0.76)",
+        "VEN-003 \u00a75 (0.73)",
+        "VEN-003 \u00a72 (0.67)"
+      ]
+    },
+    {
+      "id": 15,
+      "status": "hit",
+      "rank": 2,
+      "query": "is a separate Freight charge allowed to be billed on the invoice",
+      "top3": [
+        "POLICY \u00a74 (0.71)",
+        "VEN-001 \u00a75 (0.69)",
+        "VEN-001 \u00a76 (0.61)"
+      ]
+    },
+    {
+      "id": 16,
+      "status": "hit",
+      "rank": 2,
+      "query": "is a separate Delivery charge charge allowed to be billed on the invoice",
+      "top3": [
+        "POLICY \u00a74 (0.67)",
+        "VEN-002 \u00a75 (0.67)",
+        "POLICY \u00a73 (0.62)"
+      ]
+    },
+    {
+      "id": 17,
+      "status": "hit",
+      "rank": 2,
+      "query": "is a separate Delivery charge charge allowed to be billed on the invoice",
+      "top3": [
+        "POLICY \u00a74 (0.67)",
+        "VEN-002 \u00a75 (0.67)",
+        "POLICY \u00a73 (0.62)"
+      ]
+    },
+    {
+      "id": 18,
+      "status": "hit",
+      "rank": 1,
+      "query": "is a separate Freight charges - 300 km at 42/km charge allowed to be billed on the invoice",
+      "top3": [
+        "VEN-003 \u00a75 (0.72)",
+        "POLICY \u00a74 (0.70)",
+        "VEN-003 \u00a73 (0.68)"
+      ]
+    },
+    {
+      "id": 19,
+      "status": "hit",
+      "rank": 2,
+      "query": "is a separate Handling charge charge allowed to be billed on the invoice",
+      "top3": [
+        "POLICY \u00a74 (0.70)",
+        "VEN-005 \u00a75 (0.64)",
+        "POLICY \u00a73 (0.61)"
+      ]
+    },
+    {
+      "id": 20,
+      "status": "skip",
+      "query": "is a separate Extended warranty charge allowed to be billed on the invoice",
+      "top3": [
+        "POLICY \u00a74 (0.63)",
+        "POLICY \u00a73 (0.62)",
+        "VEN-001 \u00a76 (0.60)"
+      ]
+    }
+  ]
+}

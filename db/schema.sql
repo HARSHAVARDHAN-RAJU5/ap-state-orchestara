@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict yg9l2eCALJQRZ0GhhJgGAqCrXgsLg7JkysyguSlTUx1SBT2zcrIEvsU5C1qg8Pa
+\restrict pmW69bghN9hNbnn08J2iPBxS10xY7MTIkKfunKql3naz5lZA9E0bgJynyFt7EnR
 
 -- Dumped from database version 15.15
 -- Dumped by pg_dump version 15.15
@@ -17,6 +17,20 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: vector; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION vector; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION vector IS 'vector data type and ivfflat and hnsw access methods';
+
 
 SET default_tablespace = '';
 
@@ -136,6 +150,123 @@ CREATE SEQUENCE public.audit_event_log_id_seq
 --
 
 ALTER SEQUENCE public.audit_event_log_id_seq OWNED BY public.audit_event_log.id;
+
+
+--
+-- Name: contract_chunks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contract_chunks (
+    chunk_id integer NOT NULL,
+    document_id integer NOT NULL,
+    organization_id text NOT NULL,
+    vendor_id text,
+    section_title text NOT NULL,
+    chunk_index integer NOT NULL,
+    content text NOT NULL,
+    embedding public.vector(768) NOT NULL,
+    content_tsv tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, content)) STORED
+);
+
+
+--
+-- Name: contract_chunks_chunk_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.contract_chunks_chunk_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: contract_chunks_chunk_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.contract_chunks_chunk_id_seq OWNED BY public.contract_chunks.chunk_id;
+
+
+--
+-- Name: contract_documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contract_documents (
+    document_id integer NOT NULL,
+    organization_id text NOT NULL,
+    vendor_id text,
+    doc_type text NOT NULL,
+    doc_name text NOT NULL,
+    file_path text NOT NULL,
+    ingested_at timestamp without time zone DEFAULT now(),
+    CONSTRAINT contract_documents_doc_type_check CHECK ((doc_type = ANY (ARRAY['contract'::text, 'policy'::text])))
+);
+
+
+--
+-- Name: contract_documents_document_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.contract_documents_document_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: contract_documents_document_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.contract_documents_document_id_seq OWNED BY public.contract_documents.document_id;
+
+
+--
+-- Name: contract_requirements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contract_requirements (
+    requirement_id integer NOT NULL,
+    organization_id text NOT NULL,
+    vendor_id text,
+    document_id integer NOT NULL,
+    section_title text NOT NULL,
+    requirement text NOT NULL,
+    quote text NOT NULL,
+    needs text NOT NULL,
+    llm_confidence real,
+    second_check boolean,
+    status text NOT NULL,
+    problems jsonb DEFAULT '[]'::jsonb NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    reviewed_at timestamp without time zone,
+    CONSTRAINT contract_requirements_needs_check CHECK ((needs = ANY (ARRAY['invoice_text'::text, 'history'::text, 'attachment'::text, 'other'::text]))),
+    CONSTRAINT contract_requirements_status_check CHECK ((status = ANY (ARRAY['auto_approved'::text, 'needs_review'::text, 'approved'::text, 'rejected'::text])))
+);
+
+
+--
+-- Name: contract_requirements_requirement_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.contract_requirements_requirement_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: contract_requirements_requirement_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.contract_requirements_requirement_id_seq OWNED BY public.contract_requirements.requirement_id;
 
 
 --
@@ -266,6 +397,22 @@ CREATE TABLE public.invoice_compliance_results (
 
 
 --
+-- Name: invoice_contract_check_results; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.invoice_contract_check_results (
+    invoice_id text NOT NULL,
+    organization_id text NOT NULL,
+    vendor_id text,
+    decision text NOT NULL,
+    checks jsonb NOT NULL,
+    reason text NOT NULL,
+    evaluated_at timestamp without time zone DEFAULT now(),
+    CONSTRAINT invoice_contract_check_results_decision_check CHECK ((decision = ANY (ARRAY['PASS'::text, 'REVIEW'::text])))
+);
+
+
+--
 -- Name: invoice_extracted_data; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -274,7 +421,8 @@ CREATE TABLE public.invoice_extracted_data (
     data jsonb NOT NULL,
     extraction_status text NOT NULL,
     extracted_at timestamp without time zone DEFAULT now(),
-    organization_id text NOT NULL
+    organization_id text NOT NULL,
+    raw_text text
 );
 
 
@@ -760,6 +908,27 @@ ALTER TABLE ONLY public.audit_event_log ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
+-- Name: contract_chunks chunk_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_chunks ALTER COLUMN chunk_id SET DEFAULT nextval('public.contract_chunks_chunk_id_seq'::regclass);
+
+
+--
+-- Name: contract_documents document_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_documents ALTER COLUMN document_id SET DEFAULT nextval('public.contract_documents_document_id_seq'::regclass);
+
+
+--
+-- Name: contract_requirements requirement_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_requirements ALTER COLUMN requirement_id SET DEFAULT nextval('public.contract_requirements_requirement_id_seq'::regclass);
+
+
+--
 -- Name: exception_review_decisions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -886,6 +1055,38 @@ ALTER TABLE ONLY public.audit_event_log
 
 
 --
+-- Name: contract_chunks contract_chunks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_chunks
+    ADD CONSTRAINT contract_chunks_pkey PRIMARY KEY (chunk_id);
+
+
+--
+-- Name: contract_documents contract_documents_organization_id_doc_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_documents
+    ADD CONSTRAINT contract_documents_organization_id_doc_name_key UNIQUE (organization_id, doc_name);
+
+
+--
+-- Name: contract_documents contract_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_documents
+    ADD CONSTRAINT contract_documents_pkey PRIMARY KEY (document_id);
+
+
+--
+-- Name: contract_requirements contract_requirements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_requirements
+    ADD CONSTRAINT contract_requirements_pkey PRIMARY KEY (requirement_id);
+
+
+--
 -- Name: exception_review_decisions exception_review_decisions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -915,6 +1116,14 @@ ALTER TABLE ONLY public.invoice_approval_workflow
 
 ALTER TABLE ONLY public.invoice_compliance_results
     ADD CONSTRAINT invoice_compliance_results_pkey PRIMARY KEY (invoice_id, organization_id);
+
+
+--
+-- Name: invoice_contract_check_results invoice_contract_check_results_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoice_contract_check_results
+    ADD CONSTRAINT invoice_contract_check_results_pkey PRIMARY KEY (invoice_id, organization_id);
 
 
 --
@@ -1118,6 +1327,27 @@ ALTER TABLE ONLY public.worker_completion_log
 
 
 --
+-- Name: contract_chunks_org_vendor_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contract_chunks_org_vendor_idx ON public.contract_chunks USING btree (organization_id, vendor_id);
+
+
+--
+-- Name: contract_chunks_tsv_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contract_chunks_tsv_idx ON public.contract_chunks USING gin (content_tsv);
+
+
+--
+-- Name: contract_requirements_org_vendor_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contract_requirements_org_vendor_idx ON public.contract_requirements USING btree (organization_id, vendor_id);
+
+
+--
 -- Name: idx_agent_action_log_errors; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1187,6 +1417,22 @@ ALTER TABLE ONLY public.approval_config
 
 ALTER TABLE ONLY public.audit_event_log
     ADD CONSTRAINT audit_event_invoice_fk FOREIGN KEY (invoice_id, organization_id) REFERENCES public.invoices(invoice_id, organization_id);
+
+
+--
+-- Name: contract_chunks contract_chunks_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_chunks
+    ADD CONSTRAINT contract_chunks_document_id_fkey FOREIGN KEY (document_id) REFERENCES public.contract_documents(document_id) ON DELETE CASCADE;
+
+
+--
+-- Name: contract_requirements contract_requirements_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contract_requirements
+    ADD CONSTRAINT contract_requirements_document_id_fkey FOREIGN KEY (document_id) REFERENCES public.contract_documents(document_id) ON DELETE CASCADE;
 
 
 --
@@ -1313,5 +1559,5 @@ ALTER TABLE ONLY public.tax_rules_config
 -- PostgreSQL database dump complete
 --
 
-\unrestrict yg9l2eCALJQRZ0GhhJgGAqCrXgsLg7JkysyguSlTUx1SBT2zcrIEvsU5C1qg8Pa
+\unrestrict pmW69bghN9hNbnn08J2iPBxS10xY7MTIkKfunKql3naz5lZA9E0bgJynyFt7EnR
 

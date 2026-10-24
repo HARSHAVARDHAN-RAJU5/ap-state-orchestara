@@ -1,0 +1,74 @@
+{
+  "description": "SAMPLE DATA - fake invoices (plain text, like a pdfplumber dump) with the expected Layer 2 requirement status per checklist item. Written before any run. Used only by rag.eval_requirements; never embedded.",
+  "organization_id": "ORG-1",
+  "rules": {
+    "statuses": ["pass", "violation", "review", "skipped"],
+    "matching": "a requirement in the DB is scored against an expected key when it is for the same vendor, its section_title starts with the same section number and its quote contains one of the key phrases (same keys as checklist_truth.json)",
+    "expected": "a list of acceptable statuses. two are listed when the right answer depends on how the checklist classified 'needs' (e.g. a timesheet counted as an attachment -> review without an ai call; counted as invoice text -> checked)",
+    "safe_routing": "a requirement whose acceptable statuses are all human-bound (violation / review) must not come back pass or skipped"
+  },
+  "keys": {
+    "VEN-001": {"po": {"section": "4", "phrases": ["purchase order number"]},
+                "ref": {"section": "4", "phrases": ["reference ven-001"]},
+                "tax": {"section": "6", "phrases": ["shown separately"]}},
+    "VEN-002": {"po": {"section": "4", "phrases": ["purchase order number"]},
+                "ref": {"section": "4", "phrases": ["reference ven-002"]},
+                "tax": {"section": "6", "phrases": ["shown separately"]}},
+    "VEN-003": {"ref": {"section": "4", "phrases": ["reference ven-003"]},
+                "trips": {"section": "4", "phrases": ["trips completed", "distance for each"]},
+                "freight_line": {"section": "5", "phrases": ["separate line"]},
+                "tax": {"section": "6", "phrases": ["shown separately"]}},
+    "VEN-004": {"ref": {"section": "4", "phrases": ["reference ven-004"]},
+                "timesheet": {"section": "4", "phrases": ["timesheet"]},
+                "receipts": {"section": "5", "phrases": ["receipts"]},
+                "tax": {"section": "6", "phrases": ["shown separately"]}},
+    "VEN-005": {"monthly": {"section": "4", "phrases": ["one invoice per month"]},
+                "ref": {"section": "4", "phrases": ["referencing ven-005"]},
+                "tax": {"section": "6", "phrases": ["shown separately"]}}
+  },
+  "invoices": [
+    {"id": 1, "vendor_id": "VEN-001", "title": "Tech Supplies - fully compliant",
+     "raw_text": "SAMPLE DATA\nTAX INVOICE\nTech Supplies Pvt Ltd\nGSTIN: 29ABCDE1234F1Z5\nVendor ID: VEN-001\nBill To: Orchestara Demo Pvt Ltd\nInvoice No: TS-2026-0412 Invoice Date: 2026-10-05\nDue Date: 2026-11-19\nPurchase Order No: PO-7781\nDescription Qty Unit Price Amount\nLaptop - 14 inch business 2 62,000.00 1,24,000.00\nSoftware licence - office suite (1 year) 4 4,500.00 18,000.00\nSubtotal 1,42,000.00\nCGST @ 9% 12,780.00\nSGST @ 9% 12,780.00\nTotal 1,67,560.00\nThank you for your business.",
+     "expected": {"po": ["pass"], "ref": ["pass"], "tax": ["pass"]}},
+
+    {"id": 2, "vendor_id": "VEN-001", "title": "Tech Supplies - no PO number",
+     "raw_text": "SAMPLE DATA\nTAX INVOICE\nTech Supplies Pvt Ltd\nGSTIN: 29ABCDE1234F1Z5\nVendor ID: VEN-001\nBill To: Orchestara Demo Pvt Ltd\nInvoice No: TS-2026-0419 Invoice Date: 2026-10-09\nDue Date: 2026-11-23\nDescription Qty Unit Price Amount\nLaptop - 14 inch business 1 62,000.00 62,000.00\nSubtotal 62,000.00\nIGST @ 18% 11,160.00\nTotal 73,160.00\nPayment by bank transfer to the account on file.",
+     "expected": {"po": ["violation"], "ref": ["pass"], "tax": ["pass"]}},
+
+    {"id": 3, "vendor_id": "VEN-002", "title": "Bharat - tax not shown separately",
+     "raw_text": "SAMPLE DATA\nINVOICE\nBharat Office Mart\nGSTIN: 27AABCB2345D1Z6\nVendor Ref: VEN-002\nCustomer: Orchestara Demo Pvt Ltd\nInvoice #: BOM/1187 Date: 2026-10-02\nPO Number: PO-7790\nDue: 2026-11-01\nItem Qty Rate Amount\nA4 paper (ream) 40 295.00 11,800.00\nToner cartridge 2 3,776.00 7,552.00\nTotal (inclusive of all taxes) 19,352.00\nGoods once sold will be replaced only if damaged on delivery.",
+     "expected": {"po": ["pass"], "ref": ["pass"], "tax": ["violation"]}},
+
+    {"id": 4, "vendor_id": "VEN-002", "title": "Bharat - no vendor reference",
+     "raw_text": "SAMPLE DATA\nINVOICE\nBharat Office Mart\nGSTIN: 27AABCB2345D1Z6\nCustomer: Orchestara Demo Pvt Ltd\nInvoice #: BOM/1201 Date: 2026-10-12\nPO Number: PO-7802\nDue: 2026-11-11\nItem Qty Rate Amount\nA4 paper (ream) 20 250.00 5,000.00\nDelivery charge 1 500.00 500.00\nSubtotal 5,500.00\nCGST @ 6% 330.00\nSGST @ 6% 330.00\nTotal 6,160.00",
+     "expected": {"po": ["pass"], "ref": ["violation"], "tax": ["pass"]}},
+
+    {"id": 5, "vendor_id": "VEN-002", "title": "Bharat - PO number not yet known",
+     "raw_text": "SAMPLE DATA\nINVOICE\nBharat Office Mart\nGSTIN: 27AABCB2345D1Z6\nVendor Ref: VEN-002\nCustomer: Orchestara Demo Pvt Ltd\nInvoice #: BOM/1215 Date: 2026-10-18\nPO Number: to be advised\nDue: 2026-11-17\nItem Qty Rate Amount\nToner cartridge 4 3,200.00 12,800.00\nSubtotal 12,800.00\nCGST @ 9% 1,152.00\nSGST @ 9% 1,152.00\nTotal 15,104.00",
+     "expected": {"po": ["violation", "review"], "ref": ["pass"], "tax": ["pass"]}},
+
+    {"id": 6, "vendor_id": "VEN-003", "title": "Swift - trips listed with km",
+     "raw_text": "SAMPLE DATA\nTAX INVOICE\nSwift Logistics\nGSTIN: 07AACCS3456E1Z7\nOur vendor code with you: VEN-003\nBilled to: Orchestara Demo Pvt Ltd\nInvoice No: SL-55102 Date: 2026-10-07 Due: 2026-10-22\nTrips completed\nTrip Date Route Distance (km) Rate Amount\nT-881 2026-10-01 Delhi - Jaipur 280 42.00 11,760.00\nT-884 2026-10-03 Delhi - Agra 230 42.00 9,660.00\nT-890 2026-10-05 Delhi - Chandigarh 250 42.00 10,500.00\nFreight charges total (760 km) 31,920.00\nCGST @ 6% 1,915.20\nSGST @ 6% 1,915.20\nTotal 35,750.40",
+     "expected": {"ref": ["pass"], "trips": ["pass"], "freight_line": ["pass"], "tax": ["pass"]}},
+
+    {"id": 7, "vendor_id": "VEN-003", "title": "Swift - one lumped line, no trips",
+     "raw_text": "SAMPLE DATA\nTAX INVOICE\nSwift Logistics\nGSTIN: 07AACCS3456E1Z7\nVendor ID: VEN-003\nBilled to: Orchestara Demo Pvt Ltd\nInvoice No: SL-55140 Date: 2026-10-20 Due: 2026-11-04\nDescription Qty Rate Amount\nFreight charges - transport services for October 2026 (lump sum) 1 50,400.00 50,400.00\nSubtotal 50,400.00\nIGST @ 12% 6,048.00\nTotal 56,448.00",
+     "expected": {"ref": ["pass"], "trips": ["violation"], "freight_line": ["pass"], "tax": ["pass"]}},
+
+    {"id": 8, "vendor_id": "VEN-004", "title": "CloudNine - hours billed, no timesheet, no travel",
+     "raw_text": "SAMPLE DATA\nINVOICE\nCloudNine Consulting\nGSTIN: 29AADCC4567F1Z8\nVendor ID: VEN-004\nClient: Orchestara Demo Pvt Ltd\nInvoice No: CN-3021 Invoice Date: 2026-10-01 Due Date: 2026-11-30\nDescription Hours Rate Amount\nSenior consultant - ERP integration, September 2026 40 3,500.00 1,40,000.00\nJunior consultant - ERP integration, September 2026 60 2,000.00 1,20,000.00\nSubtotal 2,60,000.00\nIGST @ 18% 46,800.00\nTotal 3,06,800.00",
+     "expected": {"ref": ["pass"], "timesheet": ["violation", "review"], "receipts": ["skipped", "review"], "tax": ["pass"]}},
+
+    {"id": 9, "vendor_id": "VEN-004", "title": "CloudNine - timesheet included, travel without receipts",
+     "raw_text": "SAMPLE DATA\nINVOICE\nCloudNine Consulting\nGSTIN: 29AADCC4567F1Z8\nVendor ID: VEN-004\nClient: Orchestara Demo Pvt Ltd\nInvoice No: CN-3044 Invoice Date: 2026-10-15 Due Date: 2026-12-14\nDescription Hours Rate Amount\nSenior consultant - data migration 24 3,500.00 84,000.00\nTravel expenses - client site visit Mumbai 1 8,400.00 8,400.00\nSubtotal 92,400.00\nIGST @ 18% 16,632.00\nTotal 1,09,032.00\nTimesheet\nConsultant Role Week Hours\nA. Rao Senior 2026-10-05 12\nA. Rao Senior 2026-10-12 12\nTotal hours 24",
+     "expected": {"ref": ["pass"], "timesheet": ["pass", "review"], "receipts": ["violation", "review"], "tax": ["pass"]}},
+
+    {"id": 10, "vendor_id": "VEN-005", "title": "GreenLeaf - normal monthly invoice",
+     "raw_text": "SAMPLE DATA\nTAX INVOICE\nGreenLeaf Facility Services\nGSTIN: 33AAECG5678G1Z9\nRef: VEN-005\nTo: Orchestara Demo Pvt Ltd\nInvoice No: GL-0926 Invoice Date: 2026-10-01 Due Date: 2026-10-31\nService period: September 2026\nDescription Qty Rate Amount\nOffice cleaning services - monthly fee (September 2026) 1 85,000.00 85,000.00\nSubtotal 85,000.00\nCGST @ 9% 7,650.00\nSGST @ 9% 7,650.00\nTotal 1,00,300.00",
+     "expected": {"monthly": ["review"], "ref": ["pass"], "tax": ["pass"]}},
+
+    {"id": 11, "vendor_id": "VEN-005", "title": "GreenLeaf - no vendor reference, tax lumped",
+     "raw_text": "SAMPLE DATA\nTAX INVOICE\nGreenLeaf Facility Services\nGSTIN: 33AAECG5678G1Z9\nTo: Orchestara Demo Pvt Ltd\nInvoice No: GL-1026 Invoice Date: 2026-11-01 Due Date: 2026-12-01\nService period: October 2026\nDescription Amount\nOffice cleaning services - October 2026 (fee incl. GST) 1,00,300.00\nTotal payable 1,00,300.00",
+     "expected": {"monthly": ["review"], "ref": ["violation"], "tax": ["violation"]}}
+  ]
+}

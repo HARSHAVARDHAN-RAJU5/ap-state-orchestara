@@ -5,6 +5,7 @@ from workers.validation_worker import run as validation_run
 from workers.matching_worker import run as matching_run
 from workers.fraud_worker import run as fraud_run
 from workers.compliance_worker import run as compliance_run
+from workers.contract_check_worker import run as contract_check_run
 from workers.payment_worker import run as payment_run
 from workers.accounting_worker import run as accounting_run
 from workers.pending_approval_worker import run as pending_approval_run
@@ -27,6 +28,9 @@ def fraud_node(state: InvoiceState) -> InvoiceState:
 
 def compliance_node(state: InvoiceState) -> InvoiceState:
     return compliance_run(state)
+
+def contract_check_node(state: InvoiceState) -> InvoiceState:
+    return contract_check_run(state)
 
 def payment_node(state: InvoiceState) -> InvoiceState:
     return payment_run(state)

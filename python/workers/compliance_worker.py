@@ -106,7 +106,10 @@ def run(state: dict) -> dict:
     if tax_status == "FAIL":
         return {**state, "next_state": "BLOCKED", "reason": f"Tax mismatch. Expected: {expected_tax:.2f}, Got: {tax_amount:.2f}"}
 
+    # high value still needs a human, but only after the contract check so one review sees every reason
+    # (exception approval goes straight to PAYMENT_READY, which would otherwise skip the contract check)
     if high_value_flag:
-        return {**state, "next_state": "EXCEPTION_REVIEW", "reason": f"High value invoice: {total_amount} exceeds threshold"}
+        return {**state, "next_state": "CONTRACT_CHECK",
+                "reason": f"Compliance passed, high value flagged: {total_amount} exceeds threshold"}
 
-    return {**state, "next_state": "PAYMENT_READY", "reason": "Compliance passed"}
+    return {**state, "next_state": "CONTRACT_CHECK", "reason": "Compliance passed"}

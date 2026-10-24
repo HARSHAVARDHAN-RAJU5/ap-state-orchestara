@@ -36,7 +36,7 @@ Messages are always acked, even on failure.
 ## State machine
 ```
 RECEIVED → STRUCTURED → DUPLICATE_CHECK → VALIDATING → MATCHING → FRAUD_SCREENING
-→ COMPLIANCE → PAYMENT_READY → PENDING_APPROVAL → ACCOUNTING → COMPLETED
+→ COMPLIANCE → CONTRACT_CHECK → PAYMENT_READY → PENDING_APPROVAL → ACCOUNTING → COMPLETED
 Pause (human/external): PENDING_APPROVAL, EXCEPTION_REVIEW, WAITING_INFO
 Terminal: COMPLETED, BLOCKED
 EXCEPTION_REVIEW --approve--> PAYMENT_READY (never straight to approved/paid)
@@ -60,7 +60,9 @@ node app.js                                   # API on :3000
 cd python && venv\Scripts\activate && python orchestrator.py
 node monitoring/sla_monitor.js
 ```
-Needs Postgres on **5433** db `ap_orchestara`, Redis on 6379, Ollama `llama3` on 11434.
+Needs Postgres on **5433** db `ap_orchestara` (with pgvector), Redis on 6379, and `GEMINI_API_KEY` in `python/.env`.
+LLM calls go through `python/llm.py` and embeddings through `python/rag/embeddings.py`; both default to Gemini
+and can be switched back to local Ollama with `LLM_PROVIDER=ollama` / `EMBED_PROVIDER=ollama`.
 Config lives in `.env` (Node, repo root) and `python/.env` — both git-ignored, template in `.env.example`.
 Python deps are pinned in `python/requirements.txt`; the venv is **not** in git.
 There is no automated test suite (`npm test` is a stub). Verify by uploading `test/INV-1001-TEST.pdf`

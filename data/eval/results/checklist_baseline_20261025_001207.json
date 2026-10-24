@@ -1,0 +1,289 @@
+{
+  "label": "baseline",
+  "llm": "gemini:gemini-flash-lite-latest",
+  "built": 18,
+  "expected": 17,
+  "recall": 1.0,
+  "usable_recall": 1.0,
+  "precision_strict": 0.9444444444444444,
+  "precision_lenient": 1.0,
+  "auto_approval": 1.0,
+  "needs_agree": 1.0,
+  "misses": [],
+  "extras": [
+    "Consulting Agreement: CloudNine Consulti 3. Pricing [auto_approved] (acceptable): The invoice must bill only for hours actually worked and recorded."
+  ],
+  "duplicates": [],
+  "requirements": [
+    {
+      "doc_name": "Supply Agreement: Tech Supplies Pvt Ltd (VEN-001)",
+      "requirement_id": 1,
+      "section_title": "4. Payment Terms",
+      "requirement": "The invoice must quote the relevant purchase order number",
+      "quote": "Each invoice must quote the relevant purchase order number and reference VEN-001.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-001 §4 po number"
+      ]
+    },
+    {
+      "doc_name": "Supply Agreement: Tech Supplies Pvt Ltd (VEN-001)",
+      "requirement_id": 2,
+      "section_title": "4. Payment Terms",
+      "requirement": "The invoice must reference VEN-001",
+      "quote": "Each invoice must quote the relevant purchase order number and reference VEN-001.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-001 §4 reference vendor id"
+      ]
+    },
+    {
+      "doc_name": "Supply Agreement: Tech Supplies Pvt Ltd (VEN-001)",
+      "requirement_id": 3,
+      "section_title": "6. Taxes",
+      "requirement": "The invoice must show applicable taxes separately",
+      "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-001 §6 taxes separately"
+      ]
+    },
+    {
+      "doc_name": "Supply Agreement: Bharat Office Mart (VEN-002)",
+      "requirement_id": 4,
+      "section_title": "4. Payment Terms",
+      "requirement": "The invoice must quote the relevant purchase order number",
+      "quote": "Each invoice must quote the relevant purchase order number and reference VEN-002.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-002 §4 po number"
+      ]
+    },
+    {
+      "doc_name": "Supply Agreement: Bharat Office Mart (VEN-002)",
+      "requirement_id": 5,
+      "section_title": "4. Payment Terms",
+      "requirement": "The invoice must reference VEN-002",
+      "quote": "Each invoice must quote the relevant purchase order number and reference VEN-002.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-002 §4 reference vendor id"
+      ]
+    },
+    {
+      "doc_name": "Supply Agreement: Bharat Office Mart (VEN-002)",
+      "requirement_id": 6,
+      "section_title": "6. Taxes",
+      "requirement": "The invoice must show applicable taxes separately",
+      "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-002 §6 taxes separately"
+      ]
+    },
+    {
+      "doc_name": "Services Agreement: Swift Logistics (VEN-003)",
+      "requirement_id": 7,
+      "section_title": "4. Payment Terms",
+      "requirement": "The invoice must reference VEN-003",
+      "quote": "Each invoice must reference VEN-003 and list the trips completed with the distance for each.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-003 §4 reference vendor id"
+      ]
+    },
+    {
+      "doc_name": "Services Agreement: Swift Logistics (VEN-003)",
+      "requirement_id": 8,
+      "section_title": "4. Payment Terms",
+      "requirement": "The invoice must list the trips completed with the distance for each",
+      "quote": "Each invoice must reference VEN-003 and list the trips completed with the distance for each.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-003 §4 trips with distance"
+      ]
+    },
+    {
+      "doc_name": "Services Agreement: Swift Logistics (VEN-003)",
+      "requirement_id": 9,
+      "section_title": "5. Freight and Delivery",
+      "requirement": "The invoice must show freight charges as a separate line",
+      "quote": "Freight charges must be shown as a separate line on each invoice.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-003 §5 freight separate line"
+      ]
+    },
+    {
+      "doc_name": "Services Agreement: Swift Logistics (VEN-003)",
+      "requirement_id": 10,
+      "section_title": "6. Taxes",
+      "requirement": "The invoice must show applicable taxes separately",
+      "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-003 §6 taxes separately"
+      ]
+    },
+    {
+      "doc_name": "Consulting Agreement: CloudNine Consulting (VEN-004)",
+      "requirement_id": 11,
+      "section_title": "3. Pricing",
+      "requirement": "The invoice must bill only for hours actually worked and recorded.",
+      "quote": "Only hours actually worked and recorded may be billed.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "(acceptable extra)"
+      ]
+    },
+    {
+      "doc_name": "Consulting Agreement: CloudNine Consulting (VEN-004)",
+      "requirement_id": 12,
+      "section_title": "4. Payment Terms",
+      "requirement": "The invoice must reference VEN-004",
+      "quote": "Each invoice must reference VEN-004 and include a timesheet showing the hours worked by each consultant.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-004 §4 reference vendor id"
+      ]
+    },
+    {
+      "doc_name": "Consulting Agreement: CloudNine Consulting (VEN-004)",
+      "requirement_id": 13,
+      "section_title": "4. Payment Terms",
+      "requirement": "The invoice must include a timesheet showing the hours worked by each consultant",
+      "quote": "Each invoice must reference VEN-004 and include a timesheet showing the hours worked by each consultant.",
+      "needs": "attachment",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-004 §4 timesheet"
+      ]
+    },
+    {
+      "doc_name": "Consulting Agreement: CloudNine Consulting (VEN-004)",
+      "requirement_id": 14,
+      "section_title": "5. Freight and Delivery",
+      "requirement": "Invoices must be supported by receipts for travel expenses.",
+      "quote": "Travel expenses are reimbursed at actual cost only, and only when supported by receipts.",
+      "needs": "attachment",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 0.95,
+      "second_check": true,
+      "matched": [
+        "VEN-004 §5 travel receipts"
+      ]
+    },
+    {
+      "doc_name": "Consulting Agreement: CloudNine Consulting (VEN-004)",
+      "requirement_id": 15,
+      "section_title": "6. Taxes",
+      "requirement": "The invoice must show applicable taxes separately",
+      "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-004 §6 taxes separately"
+      ]
+    },
+    {
+      "doc_name": "Facility Services Agreement: GreenLeaf Facility Services (VEN-005)",
+      "requirement_id": 16,
+      "section_title": "4. Payment Terms",
+      "requirement": "Invoices must be issued once per month.",
+      "quote": "The Service Provider shall issue one invoice per month referencing VEN-005.",
+      "needs": "history",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-005 §4 one invoice per month"
+      ]
+    },
+    {
+      "doc_name": "Facility Services Agreement: GreenLeaf Facility Services (VEN-005)",
+      "requirement_id": 17,
+      "section_title": "4. Payment Terms",
+      "requirement": "The invoice must reference VEN-005.",
+      "quote": "The Service Provider shall issue one invoice per month referencing VEN-005.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-005 §4 reference vendor id"
+      ]
+    },
+    {
+      "doc_name": "Facility Services Agreement: GreenLeaf Facility Services (VEN-005)",
+      "requirement_id": 18,
+      "section_title": "6. Taxes",
+      "requirement": "The invoice must show applicable taxes separately",
+      "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+      "needs": "invoice_text",
+      "status": "auto_approved",
+      "problems": [],
+      "llm_confidence": 1.0,
+      "second_check": true,
+      "matched": [
+        "VEN-005 §6 taxes separately"
+      ]
+    }
+  ]
+}

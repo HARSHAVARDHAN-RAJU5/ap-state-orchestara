@@ -1,0 +1,140 @@
+{
+  "description": "SAMPLE DATA - ground truth for the contract check. Used only by the eval script; never embedded or shown to the LLM.",
+  "organization_id": "ORG-1",
+  "rules": {
+    "verdicts": ["compliant", "violation", "not_covered"],
+    "payment_terms": "violation only if the invoice asks for payment sooner than the contract allows; more time than agreed is compliant",
+    "retrieval_hit": "any section in gold_sections appears in the top 3 results; skipped when gold_sections is empty"
+  },
+  "questions": [
+    {"id": 1, "check": "payment_terms", "vendor_id": "VEN-002",
+     "question": "Bharat Office Mart invoice due in 30 days",
+     "invoice": {"invoice_date": "2026-10-01", "due_date": "2026-10-31"},
+     "gold_sections": [{"vendor_id": "VEN-002", "section": "4"}],
+     "expected": {"verdict": "compliant", "contract_value": 30, "invoice_value": 30}},
+
+    {"id": 2, "check": "payment_terms", "vendor_id": "VEN-001",
+     "question": "Tech Supplies invoice due in 15 days",
+     "invoice": {"invoice_date": "2026-10-01", "due_date": "2026-10-16"},
+     "gold_sections": [{"vendor_id": "VEN-001", "section": "4"}],
+     "expected": {"verdict": "violation", "contract_value": 45, "invoice_value": 15}},
+
+    {"id": 3, "check": "payment_terms", "vendor_id": "VEN-004",
+     "question": "CloudNine invoice due in 60 days",
+     "invoice": {"invoice_date": "2026-10-01", "due_date": "2026-11-30"},
+     "gold_sections": [{"vendor_id": "VEN-004", "section": "4"}],
+     "expected": {"verdict": "compliant", "contract_value": 60, "invoice_value": 60}},
+
+    {"id": 4, "check": "payment_terms", "vendor_id": "VEN-004",
+     "question": "CloudNine invoice due in 30 days",
+     "invoice": {"invoice_date": "2026-10-01", "due_date": "2026-10-31"},
+     "gold_sections": [{"vendor_id": "VEN-004", "section": "4"}],
+     "expected": {"verdict": "violation", "contract_value": 60, "invoice_value": 30}},
+
+    {"id": 5, "check": "payment_terms", "vendor_id": "VEN-003",
+     "question": "Swift Logistics invoice due in 15 days (exactly the policy minimum)",
+     "invoice": {"invoice_date": "2026-10-01", "due_date": "2026-10-16"},
+     "gold_sections": [{"vendor_id": "VEN-003", "section": "4"}],
+     "expected": {"verdict": "compliant", "contract_value": 15, "invoice_value": 15}},
+
+    {"id": 6, "check": "payment_terms", "vendor_id": "VEN-003",
+     "question": "Swift Logistics invoice due in 10 days",
+     "invoice": {"invoice_date": "2026-10-01", "due_date": "2026-10-11"},
+     "gold_sections": [{"vendor_id": "VEN-003", "section": "4"}, {"vendor_id": null, "doc": "AP Payment Policy", "section": "4"}],
+     "expected": {"verdict": "violation", "contract_value": 15, "invoice_value": 10}},
+
+    {"id": 7, "check": "payment_terms", "vendor_id": "VEN-005",
+     "question": "GreenLeaf invoice due in 45 days (more time than the 30 agreed)",
+     "invoice": {"invoice_date": "2026-10-01", "due_date": "2026-11-15"},
+     "gold_sections": [{"vendor_id": "VEN-005", "section": "4"}],
+     "expected": {"verdict": "compliant", "contract_value": 30, "invoice_value": 45}},
+
+    {"id": 8, "check": "unit_price", "vendor_id": "VEN-001",
+     "question": "Tech Supplies laptop billed at 62,000",
+     "invoice": {"line_items": [{"description": "Laptop", "quantity": 2, "unit_price": 62000, "amount": 124000}]},
+     "gold_sections": [{"vendor_id": "VEN-001", "section": "3"}],
+     "expected": {"verdict": "compliant", "contract_value": 62000, "invoice_value": 62000}},
+
+    {"id": 9, "check": "unit_price", "vendor_id": "VEN-001",
+     "question": "Tech Supplies laptop billed at 65,000",
+     "invoice": {"line_items": [{"description": "Laptop", "quantity": 1, "unit_price": 65000, "amount": 65000}]},
+     "gold_sections": [{"vendor_id": "VEN-001", "section": "3"}, {"vendor_id": null, "doc": "Procurement Policy", "section": "3"}],
+     "expected": {"verdict": "violation", "contract_value": 62000, "invoice_value": 65000}},
+
+    {"id": 10, "check": "unit_price", "vendor_id": "VEN-002",
+     "question": "Bharat Office Mart A4 paper billed at 280 per ream",
+     "invoice": {"line_items": [{"description": "A4 paper ream", "quantity": 20, "unit_price": 280, "amount": 5600}]},
+     "gold_sections": [{"vendor_id": "VEN-002", "section": "3"}],
+     "expected": {"verdict": "violation", "contract_value": 250, "invoice_value": 280}},
+
+    {"id": 11, "check": "unit_price", "vendor_id": "VEN-004",
+     "question": "CloudNine senior consultant billed at 4,000 per hour",
+     "invoice": {"line_items": [{"description": "Senior consultant hours", "quantity": 10, "unit_price": 4000, "amount": 40000}]},
+     "gold_sections": [{"vendor_id": "VEN-004", "section": "3"}],
+     "expected": {"verdict": "violation", "contract_value": 3500, "invoice_value": 4000}},
+
+    {"id": 12, "check": "unit_price", "vendor_id": "VEN-004",
+     "question": "CloudNine junior consultant billed at 2,000 per hour",
+     "invoice": {"line_items": [{"description": "Junior consultant hours", "quantity": 16, "unit_price": 2000, "amount": 32000}]},
+     "gold_sections": [{"vendor_id": "VEN-004", "section": "3"}],
+     "expected": {"verdict": "compliant", "contract_value": 2000, "invoice_value": 2000}},
+
+    {"id": 13, "check": "unit_price", "vendor_id": "VEN-005",
+     "question": "GreenLeaf monthly cleaning fee billed at 85,000",
+     "invoice": {"line_items": [{"description": "Office cleaning - monthly fee", "quantity": 1, "unit_price": 85000, "amount": 85000}]},
+     "gold_sections": [{"vendor_id": "VEN-005", "section": "3"}],
+     "expected": {"verdict": "compliant", "contract_value": 85000, "invoice_value": 85000}},
+
+    {"id": 14, "check": "unit_price", "vendor_id": "VEN-003",
+     "question": "Swift Logistics transport billed at 45 per km",
+     "invoice": {"line_items": [{"description": "Transport charges (per km)", "quantity": 300, "unit_price": 45, "amount": 13500}]},
+     "gold_sections": [{"vendor_id": "VEN-003", "section": "3"}],
+     "expected": {"verdict": "violation", "contract_value": 42, "invoice_value": 45}},
+
+    {"id": 15, "check": "extra_charges", "vendor_id": "VEN-001",
+     "question": "Tech Supplies bills a separate freight charge of 1,500",
+     "invoice": {"line_items": [
+       {"description": "Laptop", "quantity": 1, "unit_price": 62000, "amount": 62000},
+       {"description": "Freight", "quantity": 1, "unit_price": 1500, "amount": 1500}]},
+     "gold_sections": [{"vendor_id": "VEN-001", "section": "5"}],
+     "expected": {"verdict": "violation", "contract_value": 0, "invoice_value": 1500}},
+
+    {"id": 16, "check": "extra_charges", "vendor_id": "VEN-002",
+     "question": "Bharat Office Mart order of 8,000 with a 500 delivery charge",
+     "invoice": {"line_items": [
+       {"description": "A4 paper ream", "quantity": 32, "unit_price": 250, "amount": 8000},
+       {"description": "Delivery charge", "quantity": 1, "unit_price": 500, "amount": 500}]},
+     "gold_sections": [{"vendor_id": "VEN-002", "section": "5"}],
+     "expected": {"verdict": "compliant", "contract_value": 500, "invoice_value": 500}},
+
+    {"id": 17, "check": "extra_charges", "vendor_id": "VEN-002",
+     "question": "Bharat Office Mart order of 15,000 with a 500 delivery charge",
+     "invoice": {"line_items": [
+       {"description": "A4 paper ream", "quantity": 60, "unit_price": 250, "amount": 15000},
+       {"description": "Delivery charge", "quantity": 1, "unit_price": 500, "amount": 500}]},
+     "gold_sections": [{"vendor_id": "VEN-002", "section": "5"}],
+     "expected": {"verdict": "violation", "contract_value": 0, "invoice_value": 500}},
+
+    {"id": 18, "check": "extra_charges", "vendor_id": "VEN-003",
+     "question": "Swift Logistics bills a freight line (freight is its core service)",
+     "invoice": {"line_items": [{"description": "Freight charges - 300 km at 42/km", "quantity": 300, "unit_price": 42, "amount": 12600}]},
+     "gold_sections": [{"vendor_id": "VEN-003", "section": "5"}],
+     "expected": {"verdict": "compliant", "contract_value": null, "invoice_value": 12600}},
+
+    {"id": 19, "check": "extra_charges", "vendor_id": "VEN-005",
+     "question": "GreenLeaf bills a handling charge of 2,000",
+     "invoice": {"line_items": [
+       {"description": "Office cleaning - monthly fee", "quantity": 1, "unit_price": 85000, "amount": 85000},
+       {"description": "Handling charge", "quantity": 1, "unit_price": 2000, "amount": 2000}]},
+     "gold_sections": [{"vendor_id": "VEN-005", "section": "5"}],
+     "expected": {"verdict": "violation", "contract_value": 0, "invoice_value": 2000}},
+
+    {"id": 20, "check": "extra_charges", "vendor_id": "VEN-001",
+     "question": "Tech Supplies bills an extended warranty of 3,000 (not mentioned in any document)",
+     "invoice": {"line_items": [
+       {"description": "Laptop", "quantity": 1, "unit_price": 62000, "amount": 62000},
+       {"description": "Extended warranty", "quantity": 1, "unit_price": 3000, "amount": 3000}]},
+     "gold_sections": [],
+     "expected": {"verdict": "not_covered", "contract_value": null, "invoice_value": 3000}}
+  ]
+}

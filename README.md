@@ -17,6 +17,7 @@ Node.js handles intake and human decisions. Python picks up every event from Red
 - ✅ Full pipeline: upload → extraction → checks → payment scheduling → approval → accounting → payment → `COMPLETED`
 - ✅ Human decisions (payment approval, exception review) picked up by Python workers
 - ✅ Every state transition written to `audit_event_log`
+- ✅ Contract check (RAG) against vendor contracts and policies (see [Contract Check](#contract-check-rag))
 - ⏳ Not yet ported from `legacy-node`: exception auto-resolve, vendor notifications, retry-limit circuit breaker (see [Pending](#whats-still-pending))
 
 ---
@@ -26,7 +27,7 @@ Node.js handles intake and human decisions. Python picks up every event from Red
 | Layer | `legacy-node` (old) | `main` (current) |
 |---|---|---|
 | API + File Upload | Node.js + Express | Node.js + Express (unchanged) |
-| PDF Parsing + LLM Extraction | Node.js (pdfjs + Ollama) | Python (pdfplumber + Ollama) |
+| PDF Parsing + LLM Extraction | Node.js (pdfjs + Ollama) | Python (pdfplumber + Gemini) |
 | Orchestrator | `orchestrator.js` while loop | `python/orchestrator.py` + LangGraph graph |
 | Workers | JavaScript (`workers/`) | Python (`python/workers/`) |
 | Policy Engine | `core/PolicyEngine.js` | `python/policy_engine.py` |
@@ -50,7 +51,12 @@ ap-state-orchestara/
 ├── CLAUDE.md                       Instructions for Claude Code + self-learning loop
 │
 ├── db/schema.sql                   Full database schema (pg_dump --schema-only)
+├── db/migrations/                  Schema changes for the contract check (run in order)
+├── db/seeds/                       Sample vendors matching the sample contracts
 ├── test/                           Sample invoice PDF + approval payload
+├── data/
+│   ├── contracts/                  Sample vendor contracts + policies (fake, PDF)
+│   └── eval/                       Ground-truth test sets + results/
 │
 ├── routes/
 │   ├── ApprovalRoutes.js           Payment approval decision (PENDING_APPROVAL)
@@ -77,7 +83,17 @@ ap-state-orchestara/
     ├── orchestrator.py             Redis listener + LangGraph runner + audit writer
     ├── db.py                       PostgreSQL connection (reads python/.env)
     ├── policy_engine.py            Loads org config from DB
+    ├── llm.py                      LLM calls (Gemini by default, Ollama optional) with retry
     ├── requirements.txt            Pinned Python dependencies
+    ├── requirements-ingest.txt     Extra dependencies for loading contracts (Docling)
+    │
+    ├── rag/
+    │   ├── ingest.py               PDF → sections (Docling) → embeddings → pgvector
+    │   ├── embeddings.py           Gemini / Ollama embeddings
+    │   ├── retrieve.py             Vector search scoped to vendor + org policies
+    │   ├── contract_check.py       Layer 1: payment days, prices, extra charges
+    │   ├── requirements.py         Layer 2: invoice requirement checklist + check
+    │   └── eval_*.py               Evals against data/eval/
     │
     ├── graph/
     │   ├── state.py                InvoiceState TypedDict
@@ -85,12 +101,13 @@ ap-state-orchestara/
     │   └── builder.py              Graph construction + routing logic
     │
     └── workers/
-        ├── intake_worker.py            PDF parsing (pdfplumber) + LLM extraction (Ollama)
+        ├── intake_worker.py            PDF parsing (pdfplumber) + LLM extraction incl. line items
         ├── duplicate_worker.py         Paid registry + pipeline duplicate check
         ├── validation_worker.py        Vendor, bank account, tax ID validation
         ├── matching_worker.py          PO matching with fuzzy vendor name + tolerance
         ├── fraud_worker.py             6-signal fraud scoring
         ├── compliance_worker.py        GST math + high value flag
+        ├── contract_check_worker.py    Contract check (RAG) — Layer 1 + Layer 2
         ├── payment_worker.py           Payment scheduling + approval tier assignment
         ├── pending_approval_worker.py  Applies the approver's APPROVE / REJECT
         ├── exception_review_worker.py  Applies the reviewer's APPROVE / ESCALATE / BLOCK
@@ -132,12 +149,70 @@ Human decision endpoints record the decision and re-emit the event. On the next 
 
 ---
 
+## Contract Check (RAG)
+
+Checks every invoice against the vendor's contract and the company policies.
+AI suggests, code verifies, humans decide.
+
+**When a contract is loaded (once):**
+- Docling reads the PDF; each numbered section becomes one chunk, embedded with Gemini
+  (`gemini-embedding-001`, 768 dims) and stored in pgvector.
+- The AI reads each section and writes a checklist of invoice requirements
+  (e.g. "the invoice must quote the PO number").
+- Code verifies each item: the quote must exist word-for-word in the contract, AI confidence ≥ 0.80,
+  and a second AI check must agree. Passing items are auto-approved; the rest wait for a human
+  (`python -m rag.requirements list / approve <id> / reject <id>`).
+
+**When an invoice reaches CONTRACT_CHECK (every time):**
+- Layer 1, numbers: payment days, unit prices, extra charges. Search finds the relevant clauses
+  (vendor contract + policies), the AI returns a verdict with a verbatim quote, and code re-checks
+  the quote, both numbers and the verdict itself.
+- Layer 2, requirements: each approved checklist item is checked against the invoice text.
+  When the AI says "met", its evidence must appear on the invoice word-for-word.
+- All fine → PAYMENT_READY. Any violation, doubt or error → EXCEPTION_REVIEW, with every reason
+  in one review. High-value invoices also pass through here before review.
+- Vendors without a contract are checked against company policies only.
+
+### Results (sample data, Gemini free tier)
+| Test | Result |
+|---|---|
+| Retrieval: right section in top 3 (19 questions) | 84% (nomic-embed-text) → **100%** (gemini-embedding-001); MRR 0.61 → 0.75 |
+| Layer 1: AI verdict correct (20 questions) | 85% → **90%** after clearer prompt wording |
+| Layer 1: safe routing (nothing wrong gets through) | **100%**; code caught every AI mistake |
+| Layer 2: checklist rules found (17 real rules in 5 contracts) | **17/17**, plus 1 extra rule (rejected by hand) |
+| Layer 2: clean test invoices (37 checks) | **37/37** |
+| Layer 2: messy invoices (40 checks: jumbled text, scan typos, "N/A", prompt injection) | **39/40**, 0 unsafe |
+
+### What failed and why
+- The AI misread payment terms (contract "within 60 days" vs vendor asking for 30). Code caught it;
+  next step is letting code alone decide payment days.
+- Company policies often outrank the vendor's own clause in search (right answer at #1 in only 11/19).
+- `gemini-3.8-flash` hit free-tier limits (429/503), so the evals use `gemini-flash-lite-latest`.
+- Rules that need attachments or invoice history (CloudNine timesheet, GreenLeaf one-invoice-per-month)
+  always go to a human.
+- The AI was almost always 100% confident, so the low-confidence path is untested,
+  and the test invoices are typed text, not real PDFs.
+
+### Commands
+```bash
+cd python
+venv\Scripts\python.exe -B -m rag.ingest                  # load data/contracts/*.pdf + build checklists
+venv\Scripts\python.exe -B -m rag.requirements list       # view checklist (approve <id> / reject <id>)
+venv\Scripts\python.exe -B -m rag.eval_retrieval --label run
+venv\Scripts\python.exe -B -m rag.eval_answers --label run
+venv\Scripts\python.exe -B -m rag.eval_checklist --label run
+venv\Scripts\python.exe -B -m rag.eval_requirements --label run [--file requirement_questions_messy.json]
+```
+All contracts, vendors and test questions are **fake sample data** (`data/`, `db/seeds/sample_vendors.sql`).
+
+---
+
 ## State Machine
 
 ```
 RECEIVED → STRUCTURED → DUPLICATE_CHECK → VALIDATING → MATCHING
-→ FRAUD_SCREENING → COMPLIANCE → PAYMENT_READY → PENDING_APPROVAL
-→ ACCOUNTING → COMPLETED
+→ FRAUD_SCREENING → COMPLIANCE → CONTRACT_CHECK → PAYMENT_READY
+→ PENDING_APPROVAL → ACCOUNTING → COMPLETED
 
 Human decisions:
 PENDING_APPROVAL  --APPROVE--> ACCOUNTING
@@ -176,9 +251,9 @@ Score > 60 → BLOCKED
 ### Prerequisites
 - Node.js 20+
 - Python 3.11+
-- PostgreSQL on port 5433, database `ap_orchestara` (create tables with `db/schema.sql`)
+- PostgreSQL on port 5433, database `ap_orchestara`, with the [pgvector](https://github.com/pgvector/pgvector) extension (create tables with `db/schema.sql`)
 - Redis on 6379 (Docker)
-- Ollama with the `llama3` model
+- Gemini API key (Ollama optional)
 
 ### Environment variables
 Copy `.env.example` to **both** `.env` (repo root, for Node) and `python/.env` (for Python), then set `DB_PASSWORD`.
@@ -194,6 +269,12 @@ REDIS_URL=redis://127.0.0.1:6379
 OLLAMA_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3
 BANK_ACCOUNT_ID=3001
+# python/.env only: LLM + embeddings (gemini or ollama)
+GEMINI_API_KEY=your_gemini_key
+LLM_PROVIDER=gemini
+GEMINI_MODEL=gemini-flash-lite-latest
+EMBED_PROVIDER=gemini
+GEMINI_EMBED_MODEL=gemini-embedding-001
 ```
 
 ### Node.js
@@ -208,7 +289,11 @@ python -m venv venv
 venv\Scripts\activate        # Windows
 source venv/bin/activate     # Mac/Linux
 pip install -r requirements.txt
+pip install -r requirements-ingest.txt   # only needed to load contracts (Docling)
 ```
+
+Contract check database setup (run once, in order): `db/migrations/001_contract_rag.sql`,
+`db/migrations/002_contract_requirements.sql`, then the sample vendors `db/seeds/sample_vendors.sql`.
 
 ---
 
@@ -282,6 +367,7 @@ TRUNCATE TABLE journal_lines CASCADE;
 TRUNCATE TABLE paid_invoice_registry CASCADE;
 TRUNCATE TABLE invoice_fraud_scores CASCADE;
 TRUNCATE TABLE invoice_compliance_results CASCADE;
+TRUNCATE TABLE invoice_contract_check_results CASCADE;
 TRUNCATE TABLE invoice_risk_assessment CASCADE;
 TRUNCATE TABLE failure_patterns CASCADE;
 TRUNCATE TABLE worker_completion_log CASCADE;
@@ -298,7 +384,10 @@ TRUNCATE TABLE invoices CASCADE;
 - [ ] Python equivalent of ReflectionService circuit breaker (retry limit → EXCEPTION_REVIEW)
 - [ ] Python equivalent of workerIdempotency
 - [ ] Pydantic structured outputs for LLM calls
-- [ ] Swap Ollama to OpenAI API
+- [x] LLM + embeddings on Gemini
+- [ ] Contract chatbot (Layer 3)
+- [ ] Payment days decided by code only
+- [ ] End-to-end test with real invoice PDFs
 
 ---
 

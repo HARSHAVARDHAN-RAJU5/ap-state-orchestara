@@ -1,0 +1,244 @@
+{
+    "label":  "baseline",
+    "k":  3,
+    "hit_rate":  0.8421052631578947,
+    "mrr":  0.6140350877192983,
+    "hits":  16,
+    "scored":  19,
+    "by_check":  {
+                     "payment_terms":  {
+                                           "hits":  7,
+                                           "total":  7
+                                       },
+                     "unit_price":  {
+                                        "hits":  7,
+                                        "total":  7
+                                    },
+                     "extra_charges":  {
+                                           "hits":  2,
+                                           "total":  5
+                                       }
+                 },
+    "questions":  [
+                      {
+                          "id":  1,
+                          "status":  "hit",
+                          "rank":  3,
+                          "query":  "payment terms: number of days after the invoice date within which payment is due",
+                          "top3":  [
+                                       "POLICY §3 (0.82)",
+                                       "POLICY §4 (0.79)",
+                                       "VEN-002 §4 (0.79)"
+                                   ]
+                      },
+                      {
+                          "id":  2,
+                          "status":  "hit",
+                          "rank":  2,
+                          "query":  "payment terms: number of days after the invoice date within which payment is due",
+                          "top3":  [
+                                       "POLICY §3 (0.82)",
+                                       "VEN-001 §4 (0.81)",
+                                       "POLICY §4 (0.79)"
+                                   ]
+                      },
+                      {
+                          "id":  3,
+                          "status":  "hit",
+                          "rank":  2,
+                          "query":  "payment terms: number of days after the invoice date within which payment is due",
+                          "top3":  [
+                                       "POLICY §3 (0.82)",
+                                       "VEN-004 §4 (0.80)",
+                                       "POLICY §4 (0.79)"
+                                   ]
+                      },
+                      {
+                          "id":  4,
+                          "status":  "hit",
+                          "rank":  2,
+                          "query":  "payment terms: number of days after the invoice date within which payment is due",
+                          "top3":  [
+                                       "POLICY §3 (0.82)",
+                                       "VEN-004 §4 (0.80)",
+                                       "POLICY §4 (0.79)"
+                                   ]
+                      },
+                      {
+                          "id":  5,
+                          "status":  "hit",
+                          "rank":  2,
+                          "query":  "payment terms: number of days after the invoice date within which payment is due",
+                          "top3":  [
+                                       "POLICY §3 (0.82)",
+                                       "VEN-003 §4 (0.81)",
+                                       "POLICY §4 (0.79)"
+                                   ]
+                      },
+                      {
+                          "id":  6,
+                          "status":  "hit",
+                          "rank":  2,
+                          "query":  "payment terms: number of days after the invoice date within which payment is due",
+                          "top3":  [
+                                       "POLICY §3 (0.82)",
+                                       "VEN-003 §4 (0.81)",
+                                       "POLICY §4 (0.79)"
+                                   ]
+                      },
+                      {
+                          "id":  7,
+                          "status":  "hit",
+                          "rank":  3,
+                          "query":  "payment terms: number of days after the invoice date within which payment is due",
+                          "top3":  [
+                                       "POLICY §3 (0.82)",
+                                       "POLICY §4 (0.79)",
+                                       "VEN-005 §4 (0.79)"
+                                   ]
+                      },
+                      {
+                          "id":  8,
+                          "status":  "hit",
+                          "rank":  1,
+                          "query":  "agreed contract price per unit for Laptop",
+                          "top3":  [
+                                       "VEN-001 §3 (0.80)",
+                                       "VEN-001 §2 (0.65)",
+                                       "VEN-001 §6 (0.63)"
+                                   ]
+                      },
+                      {
+                          "id":  9,
+                          "status":  "hit",
+                          "rank":  1,
+                          "query":  "agreed contract price per unit for Laptop",
+                          "top3":  [
+                                       "VEN-001 §3 (0.80)",
+                                       "VEN-001 §2 (0.65)",
+                                       "VEN-001 §6 (0.63)"
+                                   ]
+                      },
+                      {
+                          "id":  10,
+                          "status":  "hit",
+                          "rank":  1,
+                          "query":  "agreed contract price per unit for A4 paper ream",
+                          "top3":  [
+                                       "VEN-002 §3 (0.82)",
+                                       "VEN-002 §6 (0.64)",
+                                       "VEN-002 §8 (0.63)"
+                                   ]
+                      },
+                      {
+                          "id":  11,
+                          "status":  "hit",
+                          "rank":  1,
+                          "query":  "agreed contract price per unit for Senior consultant hours",
+                          "top3":  [
+                                       "VEN-004 §3 (0.80)",
+                                       "VEN-004 §4 (0.67)",
+                                       "VEN-004 §2 (0.65)"
+                                   ]
+                      },
+                      {
+                          "id":  12,
+                          "status":  "hit",
+                          "rank":  1,
+                          "query":  "agreed contract price per unit for Junior consultant hours",
+                          "top3":  [
+                                       "VEN-004 §3 (0.79)",
+                                       "VEN-004 §4 (0.65)",
+                                       "VEN-004 §2 (0.65)"
+                                   ]
+                      },
+                      {
+                          "id":  13,
+                          "status":  "hit",
+                          "rank":  1,
+                          "query":  "agreed contract price per unit for Office cleaning - monthly fee",
+                          "top3":  [
+                                       "VEN-005 §3 (0.75)",
+                                       "VEN-005 §2 (0.68)",
+                                       "VEN-005 §5 (0.66)"
+                                   ]
+                      },
+                      {
+                          "id":  14,
+                          "status":  "hit",
+                          "rank":  1,
+                          "query":  "agreed contract price per unit for Transport charges (per km)",
+                          "top3":  [
+                                       "VEN-003 §3 (0.81)",
+                                       "VEN-003 §5 (0.74)",
+                                       "VEN-003 §6 (0.68)"
+                                   ]
+                      },
+                      {
+                          "id":  15,
+                          "status":  "hit",
+                          "rank":  2,
+                          "query":  "is a separate Freight charge allowed to be billed on the invoice",
+                          "top3":  [
+                                       "POLICY §4 (0.73)",
+                                       "VEN-001 §5 (0.61)",
+                                       "POLICY §3 (0.60)"
+                                   ]
+                      },
+                      {
+                          "id":  16,
+                          "status":  "miss",
+                          "rank":  null,
+                          "query":  "is a separate Delivery charge charge allowed to be billed on the invoice",
+                          "top3":  [
+                                       "POLICY §4 (0.67)",
+                                       "POLICY §3 (0.64)",
+                                       "POLICY §4 (0.61)"
+                                   ]
+                      },
+                      {
+                          "id":  17,
+                          "status":  "miss",
+                          "rank":  null,
+                          "query":  "is a separate Delivery charge charge allowed to be billed on the invoice",
+                          "top3":  [
+                                       "POLICY §4 (0.67)",
+                                       "POLICY §3 (0.64)",
+                                       "POLICY §4 (0.61)"
+                                   ]
+                      },
+                      {
+                          "id":  18,
+                          "status":  "hit",
+                          "rank":  1,
+                          "query":  "is a separate Freight charges - 300 km at 42/km charge allowed to be billed on the invoice",
+                          "top3":  [
+                                       "VEN-003 §5 (0.71)",
+                                       "POLICY §4 (0.69)",
+                                       "VEN-003 §3 (0.67)"
+                                   ]
+                      },
+                      {
+                          "id":  19,
+                          "status":  "miss",
+                          "rank":  null,
+                          "query":  "is a separate Handling charge charge allowed to be billed on the invoice",
+                          "top3":  [
+                                       "POLICY §4 (0.72)",
+                                       "POLICY §3 (0.61)",
+                                       "VEN-005 §6 (0.60)"
+                                   ]
+                      },
+                      {
+                          "id":  20,
+                          "status":  "skip",
+                          "query":  "is a separate Extended warranty charge allowed to be billed on the invoice",
+                          "top3":  [
+                                       "POLICY §4 (0.62)",
+                                       "POLICY §3 (0.62)",
+                                       "POLICY §5 (0.62)"
+                                   ]
+                      }
+                  ],
+    "embed_model":  "ollama:nomic-embed-text"
+}

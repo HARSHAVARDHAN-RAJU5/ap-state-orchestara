@@ -1,0 +1,1136 @@
+{
+  "label": "baseline",
+  "llm": "gemini:gemini-flash-lite-latest",
+  "thresholds": {
+    "min_confidence": 0.8
+  },
+  "scored": 37,
+  "api_errors": 0,
+  "accuracy": 1.0,
+  "safe_routing": 1.0,
+  "invoice_routing": 1.0,
+  "not_in_checklist": [],
+  "wrong": [],
+  "invoices": [
+    {
+      "id": 1,
+      "vendor_id": "VEN-001",
+      "title": "Tech Supplies - fully compliant",
+      "expected": {
+        "po": [
+          "pass"
+        ],
+        "ref": [
+          "pass"
+        ],
+        "tax": [
+          "pass"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "The invoice must quote the relevant purchase order number",
+          "requirement_id": 1,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-001 §4",
+          "quote": "Each invoice must quote the relevant purchase order number and reference VEN-001.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice quotes the purchase order number PO-7781.",
+          "evidence": "Purchase Order No: PO-7781",
+          "needs": "invoice_text",
+          "matched": [
+            "po"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-001",
+          "requirement_id": 2,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-001 §4",
+          "quote": "Each invoice must quote the relevant purchase order number and reference VEN-001.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice correctly references VEN-001 under the vendor details.",
+          "evidence": "Vendor ID: VEN-001",
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 3,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-001 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice shows CGST and SGST taxes listed separately from the subtotal.",
+          "evidence": "CGST @ 9% 12,780.00\nSGST @ 9% 12,780.00",
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "vendor_id": "VEN-001",
+      "title": "Tech Supplies - no PO number",
+      "expected": {
+        "po": [
+          "violation"
+        ],
+        "ref": [
+          "pass"
+        ],
+        "tax": [
+          "pass"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "The invoice must quote the relevant purchase order number",
+          "requirement_id": 1,
+          "verdict": "not_met",
+          "status": "violation",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-001 §4",
+          "quote": "Each invoice must quote the relevant purchase order number and reference VEN-001.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": "The invoice does not mention any purchase order number.",
+          "evidence": null,
+          "needs": "invoice_text",
+          "matched": [
+            "po"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-001",
+          "requirement_id": 2,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-001 §4",
+          "quote": "Each invoice must quote the relevant purchase order number and reference VEN-001.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice correctly references Vendor ID VEN-001 as required by the contract.",
+          "evidence": "Vendor ID: VEN-001",
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 3,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-001 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice shows the applicable tax separately with its specific amount.",
+          "evidence": "IGST @ 18% 11,160.00",
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "vendor_id": "VEN-002",
+      "title": "Bharat - tax not shown separately",
+      "expected": {
+        "po": [
+          "pass"
+        ],
+        "ref": [
+          "pass"
+        ],
+        "tax": [
+          "violation"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "The invoice must quote the relevant purchase order number",
+          "requirement_id": 4,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-002 §4",
+          "quote": "Each invoice must quote the relevant purchase order number and reference VEN-002.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice includes the relevant purchase order number.",
+          "evidence": "PO Number: PO-7790",
+          "needs": "invoice_text",
+          "matched": [
+            "po"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-002",
+          "requirement_id": 5,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-002 §4",
+          "quote": "Each invoice must quote the relevant purchase order number and reference VEN-002.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice correctly references VEN-002 as required.",
+          "evidence": "Vendor Ref: VEN-002",
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 6,
+          "verdict": "not_met",
+          "status": "violation",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-002 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": "The invoice states 'Total (inclusive of all taxes)' and does not show applicable taxes separately.",
+          "evidence": null,
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "vendor_id": "VEN-002",
+      "title": "Bharat - no vendor reference",
+      "expected": {
+        "po": [
+          "pass"
+        ],
+        "ref": [
+          "violation"
+        ],
+        "tax": [
+          "pass"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "The invoice must quote the relevant purchase order number",
+          "requirement_id": 4,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-002 §4",
+          "quote": "Each invoice must quote the relevant purchase order number and reference VEN-002.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice includes the relevant purchase order number.",
+          "evidence": "PO Number: PO-7802",
+          "needs": "invoice_text",
+          "matched": [
+            "po"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-002",
+          "requirement_id": 5,
+          "verdict": "not_met",
+          "status": "violation",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-002 §4",
+          "quote": "Each invoice must quote the relevant purchase order number and reference VEN-002.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": "The invoice does not reference VEN-002 anywhere in the text.",
+          "evidence": null,
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 6,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-002 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The applicable taxes (CGST and SGST) are shown separately on the invoice.",
+          "evidence": "CGST @ 6% 330.00\nSGST @ 6% 330.00",
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "vendor_id": "VEN-002",
+      "title": "Bharat - PO number not yet known",
+      "expected": {
+        "po": [
+          "violation",
+          "review"
+        ],
+        "ref": [
+          "pass"
+        ],
+        "tax": [
+          "pass"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "The invoice must quote the relevant purchase order number",
+          "requirement_id": 4,
+          "verdict": "not_met",
+          "status": "violation",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-002 §4",
+          "quote": "Each invoice must quote the relevant purchase order number and reference VEN-002.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": "The invoice states 'PO Number: to be advised' which is a placeholder and does not quote the relevant purchase order number.",
+          "evidence": null,
+          "needs": "invoice_text",
+          "matched": [
+            "po"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-002",
+          "requirement_id": 5,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-002 §4",
+          "quote": "Each invoice must quote the relevant purchase order number and reference VEN-002.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice correctly references VEN-002 under the vendor reference field.",
+          "evidence": "Vendor Ref: VEN-002",
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 6,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-002 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice lists CGST and SGST separately with their respective amounts.",
+          "evidence": "CGST @ 9% 1,152.00\nSGST @ 9% 1,152.00",
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "vendor_id": "VEN-003",
+      "title": "Swift - trips listed with km",
+      "expected": {
+        "ref": [
+          "pass"
+        ],
+        "trips": [
+          "pass"
+        ],
+        "freight_line": [
+          "pass"
+        ],
+        "tax": [
+          "pass"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-003",
+          "requirement_id": 7,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-003 §4",
+          "quote": "Each invoice must reference VEN-003 and list the trips completed with the distance for each.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice correctly references the required vendor code VEN-003.",
+          "evidence": "Our vendor code with you: VEN-003",
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must list the trips completed with the distance for each",
+          "requirement_id": 8,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-003 §4",
+          "quote": "Each invoice must reference VEN-003 and list the trips completed with the distance for each.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice lists the completed trips along with their respective distances.",
+          "evidence": "T-881 2026-10-01 Delhi - Jaipur 280 42.00 11,760.00\nT-884 2026-10-03 Delhi - Agra 230 42.00 9,660.00\nT-890 2026-10-05 Delhi - Chandigarh 250 42.00 10,500.00",
+          "needs": "invoice_text",
+          "matched": [
+            "trips"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show freight charges as a separate line",
+          "requirement_id": 9,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-003 §5",
+          "quote": "Freight charges must be shown as a separate line on each invoice.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice shows freight charges as a separate line.",
+          "evidence": "Freight charges total (760 km) 31,920.00",
+          "needs": "invoice_text",
+          "matched": [
+            "freight_line"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 10,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-003 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice displays CGST and SGST separately from the freight charges.",
+          "evidence": "CGST @ 6% 1,915.20\nSGST @ 6% 1,915.20",
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "vendor_id": "VEN-003",
+      "title": "Swift - one lumped line, no trips",
+      "expected": {
+        "ref": [
+          "pass"
+        ],
+        "trips": [
+          "violation"
+        ],
+        "freight_line": [
+          "pass"
+        ],
+        "tax": [
+          "pass"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-003",
+          "requirement_id": 7,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-003 §4",
+          "quote": "Each invoice must reference VEN-003 and list the trips completed with the distance for each.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice correctly references Vendor ID VEN-003.",
+          "evidence": "Vendor ID: VEN-003",
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must list the trips completed with the distance for each",
+          "requirement_id": 8,
+          "verdict": "not_met",
+          "status": "violation",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-003 §4",
+          "quote": "Each invoice must reference VEN-003 and list the trips completed with the distance for each.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": "The invoice lists a lump sum for freight charges but does not list the individual trips completed with their distances.",
+          "evidence": null,
+          "needs": "invoice_text",
+          "matched": [
+            "trips"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show freight charges as a separate line",
+          "requirement_id": 9,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-003 §5",
+          "quote": "Freight charges must be shown as a separate line on each invoice.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice includes freight charges as a distinct separate line item.",
+          "evidence": "Freight charges - transport services for October 2026 (lump sum) 1 50,400.00 50,400.00",
+          "needs": "invoice_text",
+          "matched": [
+            "freight_line"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 10,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-003 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice shows applicable taxes separately as required.",
+          "evidence": "IGST @ 12% 6,048.00",
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "vendor_id": "VEN-004",
+      "title": "CloudNine - hours billed, no timesheet, no travel",
+      "expected": {
+        "ref": [
+          "pass"
+        ],
+        "timesheet": [
+          "violation",
+          "review"
+        ],
+        "receipts": [
+          "skipped",
+          "review"
+        ],
+        "tax": [
+          "pass"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "The invoice must bill only for hours actually worked and recorded.",
+          "requirement_id": 11,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-004 §3",
+          "quote": "Only hours actually worked and recorded may be billed.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 0.9,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice bills for specific recorded hours worked by consultants during September 2026.",
+          "evidence": "Senior consultant - ERP integration, September 2026 40 3,500.00 1,40,000.00",
+          "needs": "invoice_text",
+          "matched": []
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-004",
+          "requirement_id": 12,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-004 §4",
+          "quote": "Each invoice must reference VEN-004 and include a timesheet showing the hours worked by each consultant.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice correctly references Vendor ID VEN-004.",
+          "evidence": "Vendor ID: VEN-004",
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must include a timesheet showing the hours worked by each consultant",
+          "requirement_id": 13,
+          "verdict": null,
+          "status": "review",
+          "problems": [
+            "cannot check automatically (needs attachment)"
+          ],
+          "chunk_id": null,
+          "section": "VEN-004 §4",
+          "quote": "Each invoice must reference VEN-004 and include a timesheet showing the hours worked by each consultant.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": null,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": null,
+          "evidence": null,
+          "needs": "attachment",
+          "matched": [
+            "timesheet"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "Invoices must be supported by receipts for travel expenses.",
+          "requirement_id": 14,
+          "verdict": null,
+          "status": "review",
+          "problems": [
+            "cannot check automatically (needs attachment)"
+          ],
+          "chunk_id": null,
+          "section": "VEN-004 §5",
+          "quote": "Travel expenses are reimbursed at actual cost only, and only when supported by receipts.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": null,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": null,
+          "evidence": null,
+          "needs": "attachment",
+          "matched": [
+            "receipts"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 15,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-004 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The applicable tax (IGST @ 18%) is shown separately on the invoice.",
+          "evidence": "IGST @ 18% 46,800.00",
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "vendor_id": "VEN-004",
+      "title": "CloudNine - timesheet included, travel without receipts",
+      "expected": {
+        "ref": [
+          "pass"
+        ],
+        "timesheet": [
+          "pass",
+          "review"
+        ],
+        "receipts": [
+          "violation",
+          "review"
+        ],
+        "tax": [
+          "pass"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "The invoice must bill only for hours actually worked and recorded.",
+          "requirement_id": 11,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-004 §3",
+          "quote": "Only hours actually worked and recorded may be billed.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The billed hours match the total hours recorded in the timesheet.",
+          "evidence": "Total hours 24",
+          "needs": "invoice_text",
+          "matched": []
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-004",
+          "requirement_id": 12,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-004 §4",
+          "quote": "Each invoice must reference VEN-004 and include a timesheet showing the hours worked by each consultant.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice references the required Vendor ID VEN-004.",
+          "evidence": "Vendor ID: VEN-004",
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must include a timesheet showing the hours worked by each consultant",
+          "requirement_id": 13,
+          "verdict": null,
+          "status": "review",
+          "problems": [
+            "cannot check automatically (needs attachment)"
+          ],
+          "chunk_id": null,
+          "section": "VEN-004 §4",
+          "quote": "Each invoice must reference VEN-004 and include a timesheet showing the hours worked by each consultant.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": null,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": null,
+          "evidence": null,
+          "needs": "attachment",
+          "matched": [
+            "timesheet"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "Invoices must be supported by receipts for travel expenses.",
+          "requirement_id": 14,
+          "verdict": null,
+          "status": "review",
+          "problems": [
+            "cannot check automatically (needs attachment)"
+          ],
+          "chunk_id": null,
+          "section": "VEN-004 §5",
+          "quote": "Travel expenses are reimbursed at actual cost only, and only when supported by receipts.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": null,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": null,
+          "evidence": null,
+          "needs": "attachment",
+          "matched": [
+            "receipts"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 15,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-004 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The applicable tax (IGST @ 18%) is shown separately on the invoice.",
+          "evidence": "IGST @ 18% 16,632.00",
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "vendor_id": "VEN-005",
+      "title": "GreenLeaf - normal monthly invoice",
+      "expected": {
+        "monthly": [
+          "review"
+        ],
+        "ref": [
+          "pass"
+        ],
+        "tax": [
+          "pass"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "Invoices must be issued once per month.",
+          "requirement_id": 16,
+          "verdict": null,
+          "status": "review",
+          "problems": [
+            "cannot check automatically (needs history)"
+          ],
+          "chunk_id": null,
+          "section": "VEN-005 §4",
+          "quote": "The Service Provider shall issue one invoice per month referencing VEN-005.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": null,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": null,
+          "evidence": null,
+          "needs": "history",
+          "matched": [
+            "monthly"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-005.",
+          "requirement_id": 17,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-005 §4",
+          "quote": "The Service Provider shall issue one invoice per month referencing VEN-005.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The invoice correctly references VEN-005 as required by the contract.",
+          "evidence": "Ref: VEN-005",
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 18,
+          "verdict": "met",
+          "status": "pass",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-005 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": true,
+          "numbers_agree": null,
+          "explanation": "The applicable taxes (CGST and SGST) are shown separately on the invoice.",
+          "evidence": "CGST @ 9% 7,650.00\nSGST @ 9% 7,650.00",
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "vendor_id": "VEN-005",
+      "title": "GreenLeaf - no vendor reference, tax lumped",
+      "expected": {
+        "monthly": [
+          "review"
+        ],
+        "ref": [
+          "violation"
+        ],
+        "tax": [
+          "violation"
+        ]
+      },
+      "results": [
+        {
+          "check": "requirement",
+          "target": "Invoices must be issued once per month.",
+          "requirement_id": 16,
+          "verdict": null,
+          "status": "review",
+          "problems": [
+            "cannot check automatically (needs history)"
+          ],
+          "chunk_id": null,
+          "section": "VEN-005 §4",
+          "quote": "The Service Provider shall issue one invoice per month referencing VEN-005.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": null,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": null,
+          "evidence": null,
+          "needs": "history",
+          "matched": [
+            "monthly"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must reference VEN-005.",
+          "requirement_id": 17,
+          "verdict": "not_met",
+          "status": "violation",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-005 §4",
+          "quote": "The Service Provider shall issue one invoice per month referencing VEN-005.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": "The invoice does not reference VEN-005 anywhere in the text.",
+          "evidence": null,
+          "needs": "invoice_text",
+          "matched": [
+            "ref"
+          ]
+        },
+        {
+          "check": "requirement",
+          "target": "The invoice must show applicable taxes separately",
+          "requirement_id": 18,
+          "verdict": "not_met",
+          "status": "violation",
+          "problems": [],
+          "chunk_id": null,
+          "section": "VEN-005 §6",
+          "quote": "Applicable taxes shall be shown separately on each invoice as required by law.",
+          "contract_value": null,
+          "invoice_value": null,
+          "llm_confidence": 1.0,
+          "similarity": null,
+          "quote_verified": null,
+          "numbers_agree": null,
+          "explanation": "The invoice states that the fee is inclusive of GST and does not show applicable taxes separately.",
+          "evidence": null,
+          "needs": "invoice_text",
+          "matched": [
+            "tax"
+          ]
+        }
+      ]
+    }
+  ]
+}
